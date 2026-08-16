@@ -41,466 +41,35 @@ html {
 }
 
 /*
- * Widget positioning/show-hide comes from src/styles/chrome.css, imported
- * above — it's the addon's own structural CSS, not demo-only, see that
- * file for what it does and why. Everything below is purely visual
- * theming: milkdown-ember ships no visual theme (headless), and each
- * section styles the same [data-milkdown-ember-editor] / [data-toolbar] /
- * [data-mention-candidate] / [data-diff-*] hooks the addon exposes, plus
- * chrome.css's own classes, through a different styling system, to show
- * the same markup works with any of them. IMPORTANT: none of the rules
+ * The addon ships two stylesheets. src/styles/chrome.css, imported above, is
+ * mandatory and structural — positioning and show/hide, zero color.
+ * src/styles/theme.css is optional: a minimal default visual theme in which
+ * every color, radius and shadow is a `var(--milkdown-ember-*, fallback)`, so
+ * a consumer re-themes it by setting a custom property rather than
+ * out-specifying its rules. The Plain CSS section below imports theme.css and
+ * adds nothing else, proving the addon looks right out of the box. The
+ * Tailwind and DaisyUI sections deliberately skip it and restate the same
+ * visual rules in their own framework-native syntax, over the same
+ * [data-milkdown-ember-editor] / [data-toolbar] / [data-mention-candidate] /
+ * [data-diff-*] hooks the addon exposes plus chrome.css's own classes, to show
+ * the markup works under any styling system. IMPORTANT: none of the rules
  * below may redeclare `display` on `.milkdown-toolbar` or
  * `.milkdown-block-handle` unconditionally — a section selector like
- * `.plain-demo .milkdown-toolbar` has higher specificity than
- * chrome.css's bare `.milkdown-toolbar` rule, so doing that would defeat
- * its data-show gate again, which is exactly the bug that shipped here:
- * `.plain-demo .milkdown-toolbar { display: flex }` unconditionally
- * overrode `display: none` regardless of data-show.
+ * `.tailwind-demo .milkdown-toolbar` has higher specificity than chrome.css's
+ * bare `.milkdown-toolbar` rule, so doing that would defeat its data-show gate
+ * again, which is exactly the bug that shipped here: `.plain-demo
+ * .milkdown-toolbar { display: flex }` unconditionally overrode `display:
+ * none` regardless of data-show.
  */
 
-/* ---- Plain CSS section: no framework, hand-written rules. ---- */
+/* ---- Plain CSS section: consumes the addon's own shipped default theme as-is. ---- */
 
-.plain-demo [data-milkdown-ember-editor] {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  min-height: 10rem;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #1c1915;
-  cursor: text;
-}
-
-.plain-demo [data-milkdown-ember-editor]:focus-within {
-  border-color: #888;
-}
-
-/* Crepe mounts a `.milkdown` wrapper, then `.ProseMirror`, inside the
-   root we hand it. Both need to be told to stretch, not just the root:
-   `.ProseMirror` otherwise only grows to fit its own content, so on a
-   short document the actually-focusable area is much smaller than this
-   box — clicking the empty space below the text does nothing, unlike a
-   real textarea. */
-.plain-demo [data-milkdown-ember-editor] .milkdown {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-}
-
-.plain-demo [data-milkdown-ember-editor] .ProseMirror {
-  flex: 1;
-}
-
-/* Bullet/ordered/task list items: Crepe renders each as
-   `<li class="list-item"><div class="label-wrapper">…icon…</div><div
-   class="children">…text…</div></li>` — two block-level divs, which stack
-   vertically unless `.list-item` is given `display: flex` itself. */
-.plain-demo .list-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-}
-
-.plain-demo .list-item > .children {
-  min-width: 0;
-  flex: 1;
-}
-
-/* The checkbox/bullet icon is an inline SVG with its own hardcoded
-   width="24" height="24" attributes — a CSS size on the wrapper alone
-   doesn't shrink it, so it was overflowing this box before this rule
-   existed. Size the svg itself; CSS wins over the SVG's own attributes. */
-.plain-demo .label-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
-.plain-demo .label-wrapper svg {
-  width: 1.125rem;
-  height: 1.125rem;
-}
-
-.plain-demo .label-wrapper .checked,
-.plain-demo .label-wrapper .unchecked {
-  cursor: pointer;
-}
-
-/* Tables: chrome.css only imports prosemirror-tables' own base CSS
-   (table-layout, the column-resize handle's positioning), which ships
-   with zero border/background of its own by design — this addon is
-   headless, "give a table borders" is a visual choice like any other. */
-.plain-demo .milkdown-table-block table {
-  border-collapse: collapse;
-}
-
-.plain-demo .milkdown-table-block th,
-.plain-demo .milkdown-table-block td {
-  border: 1px solid #ddd;
-  padding: 0.35rem 0.6rem;
-}
-
-.plain-demo .milkdown-table-block th {
-  background: #f7f6f3;
-  font-weight: 600;
-}
-
-/* No `display` here: .milkdown-toolbar's is gated by data-show above,
-   redeclaring it here (even to the same value) would win on specificity
-   and defeat that gate again. .milkdown-top-bar isn't data-show gated
-   (see the baseline comment above), so it gets its own rule below. */
-.plain-demo .milkdown-toolbar,
-.plain-demo .milkdown-top-bar {
-  gap: 0.25rem;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  padding: 0.25rem;
-}
-
-.plain-demo .milkdown-top-bar {
-  display: flex;
-  margin-bottom: 0.5rem;
-}
-
-.plain-demo .toolbar-item {
-  border: none;
-  background: transparent;
-  border-radius: 4px;
-  padding: 0.3rem;
-  cursor: pointer;
-}
-
-.plain-demo .toolbar-item.active,
-.plain-demo .toolbar-item:hover {
-  background: #f0eee9;
-}
-
-/* The static top bar's actual button row: Crepe names these classes
-   differently from the floating toolbar's `.toolbar-item` above
-   (`top-bar-item`, `top-bar-heading-selector`, ...), and nests them inside
-   a `.top-bar-inner` wrapper that needs its own `display: flex` — without
-   it `.top-bar-inner` defaults to `display: block` and every icon/selector
-   stacks vertically instead of spreading out in a row. */
-.plain-demo .top-bar-inner {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.plain-demo .top-bar-divider {
-  width: 1px;
-  align-self: stretch;
-  margin: 0.25rem;
-  background: #ddd;
-}
-
-.plain-demo .top-bar-item {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  border: none;
-  background: transparent;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.plain-demo .top-bar-item.active,
-.plain-demo .top-bar-item:hover {
-  background: #f0eee9;
-}
-
-.plain-demo .top-bar-heading-selector {
-  position: relative;
-}
-
-.plain-demo .top-bar-heading-button {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  height: 1.75rem;
-  padding: 0 0.4rem;
-  border: none;
-  background: transparent;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.8rem;
-}
-
-.plain-demo .top-bar-heading-button:hover {
-  background: #f0eee9;
-}
-
-.plain-demo .top-bar-heading-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  z-index: 20;
-  min-width: 9rem;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
-  padding: 0.25rem;
-}
-
-.plain-demo .top-bar-heading-option {
-  display: block;
-  width: 100%;
-  padding: 0.3rem 0.5rem;
-  border: none;
-  background: transparent;
-  border-radius: 4px;
-  cursor: pointer;
-  text-align: left;
-  font-size: 0.8rem;
-}
-
-.plain-demo .top-bar-heading-option.active,
-.plain-demo .top-bar-heading-option:hover {
-  background: #f0eee9;
-}
-
-.plain-demo .milkdown-block-handle {
-  gap: 0.15rem;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  padding: 0.15rem;
-}
-
-.plain-demo .operation-item {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.plain-demo .operation-item:hover,
-.plain-demo .operation-item.active {
-  background: #f0eee9;
-}
-
-.plain-demo .link-preview,
-.plain-demo .link-edit {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.25rem 0.5rem;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
-}
-
-.plain-demo .link-display {
-  max-width: 15rem;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  font-size: 0.85rem;
-}
-
-.plain-demo .link-icon,
-.plain-demo .milkdown-link-preview .button,
-.plain-demo .milkdown-link-edit .button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.plain-demo .link-icon:hover,
-.plain-demo .milkdown-link-preview .button:hover,
-.plain-demo .milkdown-link-edit .button:hover {
-  background: #f0eee9;
-}
-
-.plain-demo .input-area {
-  width: 12rem;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-size: 0.85rem;
-}
-
-/* No `display` here, same reason as `.milkdown-toolbar` above: this
-   selector's specificity ties chrome.css's `[data-show="true"]` gate, and a
-   tie is broken by source order, not by data-show's actual value — so an
-   unconditional `display: flex` here would win regardless of data-show and
-   defeat the gate again. See the `[data-show="true"]` rule below. */
-.plain-demo .milkdown-slash-menu {
-  width: 16rem;
-  max-height: 20rem;
-  overflow: hidden;
-  flex-direction: column;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
-}
-
-.plain-demo .milkdown-slash-menu[data-show="true"] {
-  display: flex;
-}
-
-/* Vue mounts the menu's own component root as an unclassed `<div>` one
-   level inside `.milkdown-slash-menu` (it holds `.tab-group` and
-   `.menu-groups`, but is neither of them) — without making that
-   in-between div a flex column itself, it's a `display: block` box that
-   simply grows to its content's full height, and `.menu-groups`'s own
-   `flex: 1` two rules below has no real flex container to size against.
-   `min-height: 0` is required on both this div and `.menu-groups`: a flex
-   item's default `min-height: auto` refuses to shrink below its content's
-   intrinsic height, which is exactly what needs to happen here for
-   `.menu-groups` to become shorter than its full item list and actually
-   scroll. */
-.plain-demo .milkdown-slash-menu > div {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.plain-demo .milkdown-slash-menu .tab-group ul {
-  display: flex;
-  gap: 0.25rem;
-  padding: 0.4rem;
-  border-bottom: 1px solid #eee;
-  list-style: none;
-}
-
-.plain-demo .milkdown-slash-menu .tab-group li {
-  padding: 0.15rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  cursor: pointer;
-}
-
-.plain-demo .milkdown-slash-menu .tab-group li.selected {
-  background: #f0eee9;
-}
-
-/* `flex: 1` + `min-height: 0` is what actually makes this scroll: without
-   `min-height: 0`, a flex child refuses to shrink below its content's
-   natural height, so `.menu-groups` never becomes shorter than its full
-   item list — it just overflows the `.milkdown-slash-menu` wrapper above
-   (clipped by that wrapper's own `overflow: hidden`) instead of scrolling
-   internally, and `overflow-y: auto` here never engages because nothing
-   is actually being clipped from this element's own point of view. That
-   also breaks the tab-group's "jump to section" click: it sets this
-   element's `scrollTop`, which is a no-op on a box that was never
-   scrollable to begin with. */
-.plain-demo .milkdown-slash-menu .menu-groups {
-  overflow-y: auto;
-  flex: 1;
-  min-height: 0;
-  padding: 0.4rem;
-  scroll-behavior: smooth;
-}
-
-.plain-demo .milkdown-slash-menu h6 {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  color: #999;
-  margin: 0.5rem 0.4rem 0.2rem;
-}
-
-.plain-demo .milkdown-slash-menu .menu-group ul {
-  list-style: none;
-}
-
-.plain-demo .milkdown-slash-menu li[data-index] {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.35rem 0.5rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.85rem;
-}
-
-.plain-demo .milkdown-slash-menu li[data-index].hover {
-  background: #f0eee9;
-}
-
-.plain-demo [data-milkdown-ember-mention-popover] {
-  background: #1c1915;
-  color: #f4efe4;
-  border-radius: 6px;
-  padding: 0.25rem;
-  display: none;
-}
-
-.plain-demo [data-milkdown-ember-mention-popover][data-show="true"] {
-  display: block;
-}
-
-.plain-demo [data-mention-candidate] {
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  cursor: pointer;
-  list-style: none;
-}
-
-.plain-demo [data-mention-candidate][data-active] {
-  background: rgb(255 255 255 / 15%);
-}
-
-.plain-demo .milkdown-diff-added {
-  background: #e6ffed;
-  color: #1c1915;
-}
-
-.plain-demo .milkdown-diff-removed {
-  background: #ffeef0;
-  color: #1c1915;
-  text-decoration: line-through;
-}
-
-.plain-demo .milkdown-diff-controls {
-  display: inline-flex;
-  gap: 0.25rem;
-  margin: 0 0.35rem;
-}
-
-.plain-demo .milkdown-diff-accept,
-.plain-demo .milkdown-diff-reject {
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background: #fff;
-  padding: 0.05rem 0.4rem;
-  font-size: 0.75rem;
-  cursor: pointer;
-}
-
-.plain-demo [data-milkdown-ember-diff-side-by-side] {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.plain-demo [data-diff-pane] {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-}
-
-.plain-demo [data-diff-block][data-diff-status="changed"] {
-  background: #fff8e1;
-}
+/* Nothing else in this section on purpose. It is the demonstration that
+   theme.css on its own is enough for a working, decent-looking editor with no
+   CSS of your own. The Tailwind and DaisyUI sections below deliberately never
+   import it — they replace it wholesale with their own framework-native
+   styling, which is the from-scratch path. */
+@import "../src/styles/theme.css";
 
 /* ---- Tailwind section: utility classes only, no DaisyUI components. ---- */
 
@@ -566,6 +135,62 @@ html {
 
 .tailwind-demo .milkdown-table-block th {
   @apply bg-slate-50 font-semibold;
+}
+
+/* Blockquotes: no chrome.css involvement at all here (it's a plain node,
+   not a floating widget or Cursor/Placeholder feature), just a hook this
+   demo hadn't styled yet — a <blockquote> with no border/indent styling
+   is easy to mistake for "broken" since it reads as unstyled body text. */
+.tailwind-demo blockquote {
+  @apply my-2 border-l-[3px] border-slate-300 py-0.5 pl-3 text-slate-600;
+}
+
+/* The code block's language picker: `.tools`/`.language-picker`'s
+   structural layout (flex row, absolute positioning, list scrolling)
+   comes from chrome.css — this is purely the visual layer on top.
+   `#282c34` matches CodeMirror's own default theme color (`.cm-editor`'s
+   background) exactly — CodeMirror ships that itself, not something this
+   addon or demo chose, so this wrapper picks it up rather than
+   introducing a second, mismatched color. Without it the `.tools` row
+   sits on the page's own white background directly above a dark code
+   area, reading as two unrelated boxes stacked on top of each other
+   instead of one. */
+.tailwind-demo .milkdown-code-block {
+  @apply my-2 overflow-hidden rounded-md bg-[#282c34];
+}
+
+.tailwind-demo .milkdown-code-block .tools {
+  @apply px-2.5 py-1.5 text-xs text-[#abb2bf];
+}
+
+/* `text-[#abb2bf]` set explicitly here, not just inherited from `.tools`
+   above: both of these are real `<button>` elements, and buttons don't
+   inherit `color` from an ancestor the way a `<span>` or `<div>` would —
+   the browser's own UA stylesheet gives them their own text color
+   instead, so without this they render in whatever that default is
+   (often unreadable dark text) regardless of `.tools`'s color. */
+.tailwind-demo .milkdown-code-block .language-button {
+  @apply cursor-pointer gap-1 rounded px-1.5 py-1 text-[#abb2bf] hover:bg-white/10;
+}
+
+.tailwind-demo .milkdown-code-block .tools-button-group button {
+  @apply cursor-pointer rounded px-2 py-1 text-[#abb2bf] hover:bg-white/10;
+}
+
+.tailwind-demo .milkdown-code-block .list-wrapper {
+  @apply w-56 rounded-lg border border-slate-300 bg-white shadow-lg;
+}
+
+.tailwind-demo .milkdown-code-block .search-box {
+  @apply m-1 gap-1.5 rounded border border-slate-300 px-2 py-1;
+}
+
+.tailwind-demo .milkdown-code-block .search-box input {
+  @apply border-none bg-transparent text-sm outline-none;
+}
+
+.tailwind-demo .milkdown-code-block .language-list-item {
+  @apply cursor-pointer gap-1.5 px-3 py-1.5 text-sm hover:bg-slate-100;
 }
 
 /* No display utility here, same reason as the plain-CSS section above:
@@ -835,6 +460,64 @@ html {
 
 .daisy-demo .milkdown-table-block th {
   @apply bg-base-200 font-semibold;
+}
+
+/* Blockquotes: no chrome.css involvement at all here (it's a plain node,
+   not a floating widget or Cursor/Placeholder feature), just a hook this
+   demo hadn't styled yet — a <blockquote> with no border/indent styling
+   is easy to mistake for "broken" since it reads as unstyled body text. */
+.daisy-demo blockquote {
+  @apply my-2 border-l-[3px] border-base-300 py-0.5 pl-3 text-base-content/70;
+}
+
+/* The code block's language picker: `.tools`/`.language-picker`'s
+   structural layout (flex row, absolute positioning, list scrolling)
+   comes from chrome.css — this is purely the visual layer on top.
+   `#282c34` matches CodeMirror's own default theme color (`.cm-editor`'s
+   background) exactly — CodeMirror ships that itself, not something this
+   addon or demo chose, so this wrapper picks it up rather than
+   introducing a second, mismatched color. Without it the `.tools` row
+   sits on the page's own white background directly above a dark code
+   area, reading as two unrelated boxes stacked on top of each other
+   instead of one. `btn-ghost`'s own hover mixes in `base-content`, which
+   reads as barely-there on this fixed dark background regardless of the
+   active DaisyUI theme, so hover is overridden below rather than relying
+   on it. */
+.daisy-demo .milkdown-code-block {
+  @apply my-2 overflow-hidden rounded-box bg-[#282c34];
+}
+
+.daisy-demo .milkdown-code-block .tools {
+  @apply px-2.5 py-1.5 text-xs text-[#abb2bf];
+}
+
+/* `text-[#abb2bf]` overrides `.btn`'s own text color, which otherwise
+   wins here regardless of `.tools`'s color: these are real `<button>`
+   elements, and DaisyUI's `.btn` sets its own color rather than
+   inheriting, tuned for the active theme's surface color, not this
+   fixed dark background. */
+.daisy-demo .milkdown-code-block .language-button {
+  @apply btn btn-ghost btn-xs text-[#abb2bf] hover:bg-white/10;
+}
+
+.daisy-demo .milkdown-code-block .tools-button-group button {
+  @apply btn btn-ghost btn-xs text-[#abb2bf] hover:bg-white/10;
+}
+
+.daisy-demo .milkdown-code-block .list-wrapper {
+  @apply card card-border bg-base-100 w-56 shadow-lg;
+}
+
+.daisy-demo .milkdown-code-block .search-box {
+  @apply m-1 gap-1.5 rounded-box border border-base-300 px-2 py-1;
+}
+
+.daisy-demo .milkdown-code-block .search-box input {
+  @apply border-none bg-transparent text-sm outline-none;
+}
+
+.daisy-demo .milkdown-code-block .language-list-item {
+  @apply hover:bg-base-200 cursor-pointer gap-1.5 px-3 py-1.5 text-sm;
 }
 
 /* DaisyUI's `join` class itself sets `display`, so @apply-ing it here

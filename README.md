@@ -7,7 +7,7 @@ unlike editors built on an HTML-shaped document model where markdown is a lossy 
 - `@mention` — headless, trigger-driven suggestion popover, your search callback
 - Diff review — inline (Milkdown's own decoration-based review) or side-by-side
 - Swappable toolbar — Crepe's floating selection toolbar or a fixed top bar
-- Headless — no visual theme; see [Styling](#styling) for the one structural CSS file it does ship
+- Two stylesheets — a required structural one, plus an optional default theme you re-skin with custom properties; see [Styling](#styling)
 - GTS / TypeScript types published
 
 ## Install
@@ -117,15 +117,26 @@ position space to hang finer-grained decorations on.
 
 ## Styling
 
-The addon ships **no visual theme** — no colors, no fonts, no layout opinions. It does
-ship one small **structural** CSS file, `milkdown-ember/styles/chrome.css`, and importing
-it is effectively required, not optional:
+The addon ships two stylesheets, kept separate on purpose.
+
+`milkdown-ember/styles/chrome.css` is **structural** — positioning, show/hide, and
+upstream base CSS, with no colors, fonts, or layout opinions of its own. Importing it is
+effectively required, not optional: without it several Crepe features aren't merely
+unstyled, they're broken.
+
+`milkdown-ember/styles/theme.css` is a **minimal default visual theme**, and importing it
+is genuinely optional. It exists so you can have a decent-looking editor without writing
+any CSS at all. Leave it out and style the hooks yourself if you want your own look.
 
 ```css
 @import 'milkdown-ember/styles/chrome.css';
+@import 'milkdown-ember/styles/theme.css'; /* optional, and after chrome.css */
 ```
 
-`chrome.css` covers six unrelated gaps, in the order they appear in the file:
+Order matters for the second one: a few of its selectors tie chrome.css's on specificity,
+and a tie is settled by source order.
+
+`chrome.css` covers seven unrelated gaps, in the order they appear in the file:
 
 **0. Upstream base CSS.** Three of this addon's dependencies ship required CSS as a
 sibling file for the consumer to import themselves — same convention Crepe's own theme
@@ -209,7 +220,81 @@ its "paste a link or upload" and "image uploaded" sub-views, and the Code Block 
 language picker uses the same way. Both are scoped `!important` in Crepe's own theme, so
 there's no specificity gotcha the way there is with the `data-show` gates above.
 
-From there, style the hooks the addon and Crepe expose:
+**5. The Code Block feature's own chrome** (on by default). CodeMirror itself needs no
+CSS import — it's CSS-in-JS, injecting its own `<style>` tag at runtime, which is why
+syntax highlighting works with none of this file's help. What doesn't: `.tools` (the row
+holding the language button and the copy button) had no `display: flex`, so the two
+stacked on separate lines instead of sitting in a row; `.language-picker` (the language
+dropdown) had no `position: absolute`, so opening it pushed the code down and right
+instead of floating over it; `.language-list` (the dropdown's item list) had no height
+cap or `overflow-y: auto`, the identical bug already described for the "+" menu's
+`.menu-groups` above, just in a different feature's copy of the same pattern.
+
+### theme.css, and re-theming it
+
+Every color, radius, and shadow in `theme.css` is written as
+`var(--milkdown-ember-*, fallback)`. Re-theming is therefore a matter of setting custom
+properties on whatever scope suits you — `:root`, one wrapper element, a
+`prefers-color-scheme` block — instead of writing higher-specificity rules to beat the
+ones already there:
+
+```css
+/* Re-theme just the code block, leaving everything else alone */
+:root {
+  --milkdown-ember-code-bg: #f6f8fa;
+  --milkdown-ember-code-text: #57606a;
+  --milkdown-ember-code-hover: rgb(0 0 0 / 6%);
+}
+
+/* Or re-theme the whole chrome at once: the editor's border, the toolbar, the
+   block handle, the slash menu, the link popovers and the diff panes all read
+   these same three properties */
+.my-app-dark {
+  --milkdown-ember-border: #2f3336;
+  --milkdown-ember-surface: #16181c;
+  --milkdown-ember-surface-hover: #22262a;
+  --milkdown-ember-text: #e7e9ea;
+}
+
+/* Or just soften every corner in the editor */
+:root {
+  --milkdown-ember-radius: 12px;
+  --milkdown-ember-radius-md: 10px;
+  --milkdown-ember-radius-sm: 6px;
+}
+```
+
+Everything `theme.css` sets that isn't in this table — padding, gaps, widths, flex
+behavior, cursors — is layout rather than theme, and isn't parameterized.
+
+| Custom property | Fallback | Controls |
+|---|---|---|
+| `--milkdown-ember-border` | `#ddd` | Every border in the theme: the editor, table cells, a blockquote's left rule, the toolbar and top bar, the block handle, link preview/edit, the slash menu, the diff accept/reject buttons, the diff panes, and the top bar's divider |
+| `--milkdown-ember-border-focus` | `#888` | The editor's border while focused (`:focus-within`) |
+| `--milkdown-ember-radius` | `8px` | Large corners: the editor, the slash menu, a side-by-side diff pane |
+| `--milkdown-ember-radius-md` | `6px` | Medium corners: the toolbar and top bar, the block handle, the code block, the mention popover, the top bar's heading dropdown |
+| `--milkdown-ember-radius-sm` | `4px` | Small corners: every button and menu row, mention candidates, the code block's search box |
+| `--milkdown-ember-surface` | `#fff` | Panel background: the toolbar and top bar, the block handle, link preview/edit, the slash menu, the heading dropdown, the language list, the diff accept/reject buttons |
+| `--milkdown-ember-surface-hover` | `#f0eee9` | The hovered, active, or selected background on every one of those rows and buttons |
+| `--milkdown-ember-text` | `#1c1915` | The editor's body text, and text inside inline diff decorations |
+| `--milkdown-ember-text-muted` | `#57534e` | Blockquote text |
+| `--milkdown-ember-label-muted` | `#999` | The slash menu's uppercase group labels (`h6`) |
+| `--milkdown-ember-divider` | `#eee` | The rule under the slash menu's tab group |
+| `--milkdown-ember-shadow` | `0 8px 24px rgb(0 0 0 / 12%)` | Every floating panel's drop shadow: link preview/edit, the slash menu, the heading dropdown, the language list |
+| `--milkdown-ember-table-header-bg` | `#f7f6f3` | A table's header row (`th`) |
+| `--milkdown-ember-code-bg` | `#282c34` | The code block wrapper, matched to CodeMirror's own default theme background so the two read as one box |
+| `--milkdown-ember-code-text` | `#abb2bf` | The code block's language name and copy button |
+| `--milkdown-ember-code-hover` | `rgb(255 255 255 / 10%)` | Hover on those two buttons |
+| `--milkdown-ember-mention-bg` | `#1c1915` | The mention popover's background |
+| `--milkdown-ember-mention-text` | `#f4efe4` | The mention popover's text |
+| `--milkdown-ember-mention-active` | `rgb(255 255 255 / 15%)` | The keyboard-highlighted mention candidate |
+| `--milkdown-ember-diff-added-bg` | `#e6ffed` | The inline added-text decoration |
+| `--milkdown-ember-diff-removed-bg` | `#ffeef0` | The inline removed-text decoration |
+| `--milkdown-ember-diff-changed-bg` | `#fff8e1` | A changed block inside a side-by-side pane |
+| `--milkdown-ember-font-family` | `-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif` | The editor's font stack |
+
+If you'd rather build your own look from scratch, skip `theme.css` and style the hooks
+the addon and Crepe expose directly:
 
 | Selector | What |
 |---|---|
@@ -229,6 +314,9 @@ From there, style the hooks the addon and Crepe expose:
 | `.milkdown-table-block table` / `th` / `td` | A table's own borders/background — `chrome.css` only imports `prosemirror-tables`' layout CSS (column sizing, the resize handle), not any visual styling, so a table is a borderless grid without your own rule here |
 | `.milkdown-table-block .drag-preview` | The ghost row/column shown while dragging a table row or column handle |
 | `.milkdown-table-block .button-group` | The align/delete button row that appears above a selected row/column drag handle |
+| `blockquote` | Same story as tables — a plain node with no border/indent styling of its own; not a `chrome.css` concern at all, just a hook worth styling |
+| `.milkdown-code-block .tools` / `.language-button` / `.tools-button-group` | The row above a code block holding the language picker and the copy button |
+| `.milkdown-code-block .language-picker` / `.list-wrapper` / `.search-box` / `.language-list-item` | The language dropdown itself — `chrome.css` handles its position/scroll, this is the visual layer |
 | `[data-milkdown-ember-mention-popover]` | The mention suggestion popover |
 | `[data-mention-candidate]` / `[data-active]` | Candidate rows / the keyboard-highlighted one |
 | `.milkdown-diff-added` / `.milkdown-diff-removed` | Inline diff decorations |
@@ -239,11 +327,14 @@ From there, style the hooks the addon and Crepe expose:
 | `.crepe-drop-cursor` | The line shown while dragging a block, indicating where it'll land |
 | `--prosemirror-virtual-cursor-color` | The blinking text caret's color (`chrome.css` defaults both this and `.crepe-drop-cursor` to `currentColor`) |
 
-The demo app (`pnpm start`, or the deployed GitHub Pages build) shows all of this styled
-three ways — plain CSS, Tailwind, and DaisyUI — using the exact same `<MilkdownEditor>`
-usage each time, with a live `@mention` search, a toolbar toggle, and both diff modes
-wired up. `demo-app/styles.css` is the reference implementation of everything in this
-section.
+The demo app (`pnpm start`, or the deployed GitHub Pages build) shows both paths side by
+side, using the exact same `<MilkdownEditor>` usage each time, with a live `@mention`
+search, a toolbar toggle, and both diff modes wired up. Its Plain CSS section imports
+`theme.css` and adds nothing else, so it's the proof the shipped theme works out of the
+box. Its Tailwind and DaisyUI sections deliberately don't import it — they restate the
+same visual rules in their own framework-native syntax over the hooks in the table above,
+which is what the from-scratch path looks like. `demo-app/styles.css` is the reference
+implementation of both.
 
 ## Compatibility
 

@@ -37,6 +37,7 @@
     },
     "./addon-main.js": "./addon-main.cjs",
     "./styles/chrome.css": "./dist/styles/chrome.css",
+    "./styles/theme.css": "./dist/styles/theme.css",
     "./*.css": "./dist/*.css",
     "./*": {
       "types": "./declarations/*.d.ts",
