@@ -68,6 +68,7 @@
     "@ember/test-waiters": "^4.1.2",
     "@embroider/addon-shim": "^1.8.9",
     "@milkdown/crepe": "^7.22.1",
+    "@milkdown/kit": "^7.22.1",
     "decorator-transforms": "^2.2.2",
     "ember-modifier": "^4.3.0"
   },
@@ -130,6 +131,10 @@
   "ember-addon": {
     "version": 2,
     "type": "addon",
-    "main": "addon-main.cjs"
+    "main": "addon-main.cjs",
+    "app-js": {
+      "./components/milkdown-editor.js": "./dist/_app_/components/milkdown-editor.js",
+      "./modifiers/milkdown-editor.js": "./dist/_app_/modifiers/milkdown-editor.js"
+    }
   }
 }

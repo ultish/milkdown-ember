@@ -21,6 +21,25 @@ class TestApp extends EmberApp {
 
 Router.map(function () {});
 
+// Benign browser noise, not a real failure: fires when a ResizeObserver
+// callback doesn't finish within one frame, which Crepe's editor chrome
+// (block-edit drag handles, table resize) can legitimately trigger under
+// fast synthetic test input. Chrome and Firefox both surface it as a
+// window `error` event, which QUnit otherwise treats as a test failure.
+// `QUnit` is an ES module namespace object here, so its exports are
+// frozen bindings; filtering has to happen at the DOM event, registered
+// before `qunitStart()` below installs QUnit's own listener so this one
+// runs first and can stop propagation.
+window.addEventListener(
+  'error',
+  (event) => {
+    if (event.message?.includes('ResizeObserver loop')) {
+      event.stopImmediatePropagation();
+    }
+  },
+  true,
+);
+
 export function start() {
   setTesting(true);
   setApplication(
