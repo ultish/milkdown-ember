@@ -3,14 +3,18 @@ import { Crepe } from '@milkdown/crepe';
 import { editorViewCtx } from '@milkdown/kit/core';
 import { replaceAll } from '@milkdown/kit/utils';
 
+import { registerMentionFeature } from './mention/feature.ts';
+import { mentionConfigCtx } from './mention/popover-plugin.ts';
 import { featuresForToolbarMode } from './toolbar-mode.ts';
 
+import type { MentionConfig } from './mention/types.ts';
 import type { ToolbarMode } from './toolbar-mode.ts';
 
 export interface CrepeSyncManagerArgs {
   value: string;
   toolbar: ToolbarMode;
   onChange?: (markdown: string) => void;
+  mention?: MentionConfig;
 }
 
 /// Owns a Crepe instance's lifecycle and keeps it in sync with `value` /
@@ -23,6 +27,7 @@ export class CrepeSyncManager {
   #lastKnownMarkdown: string;
   #toolbar: ToolbarMode;
   #onChange: ((markdown: string) => void) | undefined;
+  #mentionEnabled: boolean;
   #root: Element;
   #ready: Promise<void>;
 
@@ -31,7 +36,8 @@ export class CrepeSyncManager {
     this.#lastKnownMarkdown = args.value;
     this.#toolbar = args.toolbar;
     this.#onChange = args.onChange;
-    this.#ready = this.#create(args.value);
+    this.#mentionEnabled = args.mention !== undefined;
+    this.#ready = this.#create(args.value, args.mention);
   }
 
   /// Resolves once the underlying Crepe instance has finished `create()`.
@@ -51,11 +57,22 @@ export class CrepeSyncManager {
   update(args: CrepeSyncManagerArgs): void {
     this.#onChange = args.onChange;
 
-    if (args.toolbar !== this.#toolbar) {
+    const mentionEnabled = args.mention !== undefined;
+    if (
+      args.toolbar !== this.#toolbar ||
+      mentionEnabled !== this.#mentionEnabled
+    ) {
       this.#toolbar = args.toolbar;
-      this.#ready = this.#recreateForToolbarChange();
+      this.#mentionEnabled = mentionEnabled;
+      this.#ready = this.#recreate(args.mention);
       return;
     }
+
+    // mentionConfigCtx is read fresh on every keystroke inside the plugin
+    // (see popover-plugin.ts #computeActiveQuery), so onSearch/trigger
+    // update in place here with no recreate needed, unlike a presence
+    // change above.
+    if (args.mention) this.#applyMentionConfig(args.mention);
 
     if (args.value !== this.#lastKnownMarkdown) {
       this.#applyExternalValue(args.value);
@@ -80,6 +97,11 @@ export class CrepeSyncManager {
 
     crepe.editor.action((ctx) => {
       const view = ctx.get(editorViewCtx);
+      // A real user has DOM focus before typing; plugins are allowed to
+      // condition on view.hasFocus() (the mention popover's trigger
+      // detection does), so a synthetic transaction without this is not
+      // actually representative of a real keystroke.
+      view.focus();
       const { state } = view;
       const tr = state.tr.insertText(text, state.selection.to);
       view.dispatch(tr);
@@ -98,12 +120,23 @@ export class CrepeSyncManager {
     crepe.editor.action(replaceAll(value));
   }
 
-  async #create(value: string): Promise<void> {
+  #applyMentionConfig(mention: MentionConfig): void {
+    this.#crepe?.editor.action((ctx) => {
+      ctx.set(mentionConfigCtx.key, mention);
+    });
+  }
+
+  async #create(
+    value: string,
+    mention: MentionConfig | undefined,
+  ): Promise<void> {
     const crepe = new Crepe({
       root: this.#root,
       defaultValue: value,
       features: featuresForToolbarMode(this.#toolbar),
     });
+
+    if (mention) registerMentionFeature(crepe.editor, mention);
 
     // Must be registered before create(): Crepe's `on()` only queues onto
     // the editor config prior to creation, and switches to a live ctx
@@ -119,16 +152,16 @@ export class CrepeSyncManager {
     this.#crepe = crepe;
   }
 
-  async #recreateForToolbarChange(): Promise<void> {
+  async #recreate(mention: MentionConfig | undefined): Promise<void> {
     await this.#ready.catch(() => undefined);
 
-    // Live truth over the incoming arg: a toolbar-only change may arrive
-    // with a `value` that's stale relative to what the user just typed.
+    // Live truth over the incoming arg: a toolbar/mention-only change may
+    // arrive with a `value` that's stale relative to what the user just typed.
     const value = this.getMarkdown();
     await this.#crepe?.destroy();
     this.#crepe = undefined;
     this.#lastKnownMarkdown = value;
 
-    await this.#create(value);
+    await this.#create(value, mention);
   }
 }

@@ -25,20 +25,33 @@ Router.map(function () {});
 // callback doesn't finish within one frame, which Crepe's editor chrome
 // (block-edit drag handles, table resize) can legitimately trigger under
 // fast synthetic test input. Chrome and Firefox both surface it as a
-// window `error` event, which QUnit otherwise treats as a test failure.
-// `QUnit` is an ES module namespace object here, so its exports are
-// frozen bindings; filtering has to happen at the DOM event, registered
-// before `qunitStart()` below installs QUnit's own listener so this one
-// runs first and can stop propagation.
-window.addEventListener(
-  'error',
-  (event) => {
-    if (event.message?.includes('ResizeObserver loop')) {
-      event.stopImmediatePropagation();
+// global error, which QUnit otherwise treats as a test failure.
+//
+// This has to be a `window.onerror` *property* override, not
+// `addEventListener('error', ...)`: the two are separate delivery paths
+// for the same browser error-reporting algorithm, and `qunitStart()`
+// below installs its own `window.onerror` property (not a listener) to
+// report failures, an addEventListener-based filter can't intercept
+// that path or stop it from firing. `QUnit.onUncaughtException` looks
+// like the "correct" QUnit-level hook for this, but `QUnit` is an ES
+// module namespace object here, its exports are frozen bindings, and
+// reassigning it throws at runtime. So: filter after qunitStart() has
+// installed its own onerror, wrapping it rather than racing to run first.
+function installResizeObserverErrorFilter(): void {
+  const previousOnError = window.onerror;
+  window.onerror = function (message, source, lineno, colno, error) {
+    if (
+      typeof message === 'string' &&
+      message.includes('ResizeObserver loop')
+    ) {
+      return true;
     }
-  },
-  true,
-);
+    if (!previousOnError) return false;
+    return Boolean(
+      previousOnError.call(window, message, source, lineno, colno, error),
+    );
+  };
+}
 
 export function start() {
   setTesting(true);
@@ -51,4 +64,5 @@ export function start() {
   setup(QUnit.assert);
   setupEmberOnerrorValidation();
   qunitStart();
+  installResizeObserverErrorFilter();
 }

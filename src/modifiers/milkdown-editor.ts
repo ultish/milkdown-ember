@@ -1,4 +1,5 @@
 import { registerDestructor } from '@ember/destroyable';
+import { waitForPromise } from '@ember/test-waiters';
 import Modifier from 'ember-modifier';
 
 import { CrepeSyncManager } from '../-private/crepe-sync-manager.ts';
@@ -7,6 +8,7 @@ import {
   unregisterEditor,
 } from '../-private/editor-registry.ts';
 
+import type { MentionSearch } from '../-private/mention/types.ts';
 import type { ToolbarMode } from '../-private/toolbar-mode.ts';
 import type { NamedArgs } from 'ember-modifier';
 
@@ -17,6 +19,8 @@ export interface MilkdownEditorModifierSignature {
       value?: string;
       onChange?: (markdown: string) => void;
       toolbar?: ToolbarMode;
+      onMentionSearch?: MentionSearch;
+      mentionTrigger?: string;
     };
   };
 }
@@ -29,22 +33,40 @@ export default class MilkdownEditorModifier extends Modifier<MilkdownEditorModif
     _positional: [],
     named: NamedArgs<MilkdownEditorModifierSignature>,
   ): void {
-    const { value = '', onChange, toolbar = 'floating' } = named;
+    const {
+      value = '',
+      onChange,
+      toolbar = 'floating',
+      onMentionSearch,
+      mentionTrigger,
+    } = named;
+    const mention = onMentionSearch
+      ? { onSearch: onMentionSearch, trigger: mentionTrigger }
+      : undefined;
 
     if (!this.#manager) {
       this.#manager = new CrepeSyncManager(element, {
         value,
         toolbar,
         onChange,
+        mention,
       });
       registerEditor(element, this.#manager);
       registerDestructor(this, () => {
         unregisterEditor(element);
-        void this.#manager?.destroy();
+        // Ember's destroyable system doesn't await destructors, so without
+        // this a second editor can start registering the same module-level
+        // Milkdown plugin singletons (mentionConfigCtx, mentionSlash) while
+        // this instance's teardown is still in flight, a real race that
+        // surfaced as an intermittent "slice is undefined" ctx error.
+        void waitForPromise(
+          this.#manager!.destroy(),
+          'milkdown-ember:crepe-destroy',
+        );
       });
       return;
     }
 
-    this.#manager.update({ value, toolbar, onChange });
+    this.#manager.update({ value, toolbar, onChange, mention });
   }
 }
