@@ -41,6 +41,7 @@ export interface EditorPlaygroundSignature {
 export default class EditorPlayground extends Component<EditorPlaygroundSignature> {
   @tracked value = INITIAL_VALUE;
   @tracked toolbar: ToolbarMode = 'floating';
+  @tracked blockHandle = true;
   @tracked showDiff = false;
   @tracked diffMode: DiffMode = 'inline';
 
@@ -61,6 +62,10 @@ export default class EditorPlayground extends Component<EditorPlaygroundSignatur
     this.toolbar = this.toolbar === 'floating' ? 'static' : 'floating';
   };
 
+  toggleBlockHandle = (): void => {
+    this.blockHandle = !this.blockHandle;
+  };
+
   setDiffMode = (mode: DiffMode): void => {
     this.diffMode = mode;
     this.showDiff = true;
@@ -77,6 +82,10 @@ export default class EditorPlayground extends Component<EditorPlaygroundSignatur
           Toolbar:
           {{this.toolbar}}
         </button>
+        <button type="button" {{on "click" this.toggleBlockHandle}}>
+          Block handle:
+          {{if this.blockHandle "on" "off"}}
+        </button>
         <button type="button" {{on "click" (fn this.setDiffMode "inline")}}>
           Show diff (inline)
         </button>
@@ -90,6 +99,7 @@ export default class EditorPlayground extends Component<EditorPlaygroundSignatur
         @value={{this.value}}
         @onChange={{this.onChange}}
         @toolbar={{this.toolbar}}
+        @blockHandle={{this.blockHandle}}
         @onMentionSearch={{this.onSearch}}
         @compareValue={{COMPARE_VALUE}}
         @showDiff={{this.showDiff}}

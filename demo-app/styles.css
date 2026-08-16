@@ -61,16 +61,92 @@ html {
 /* ---- Plain CSS section: no framework, hand-written rules. ---- */
 
 .plain-demo [data-milkdown-ember-editor] {
+  display: flex;
+  flex-direction: column;
   border: 1px solid #ddd;
   border-radius: 8px;
   padding: 0.75rem 1rem;
   min-height: 10rem;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: #1c1915;
+  cursor: text;
 }
 
 .plain-demo [data-milkdown-ember-editor]:focus-within {
   border-color: #888;
+}
+
+/* Crepe mounts a `.milkdown` wrapper, then `.ProseMirror`, inside the
+   root we hand it. Both need to be told to stretch, not just the root:
+   `.ProseMirror` otherwise only grows to fit its own content, so on a
+   short document the actually-focusable area is much smaller than this
+   box — clicking the empty space below the text does nothing, unlike a
+   real textarea. */
+.plain-demo [data-milkdown-ember-editor] .milkdown {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.plain-demo [data-milkdown-ember-editor] .ProseMirror {
+  flex: 1;
+}
+
+/* Bullet/ordered/task list items: Crepe renders each as
+   `<li class="list-item"><div class="label-wrapper">…icon…</div><div
+   class="children">…text…</div></li>` — two block-level divs, which stack
+   vertically unless `.list-item` is given `display: flex` itself. */
+.plain-demo .list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.plain-demo .list-item > .children {
+  min-width: 0;
+  flex: 1;
+}
+
+/* The checkbox/bullet icon is an inline SVG with its own hardcoded
+   width="24" height="24" attributes — a CSS size on the wrapper alone
+   doesn't shrink it, so it was overflowing this box before this rule
+   existed. Size the svg itself; CSS wins over the SVG's own attributes. */
+.plain-demo .label-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.plain-demo .label-wrapper svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.plain-demo .label-wrapper .checked,
+.plain-demo .label-wrapper .unchecked {
+  cursor: pointer;
+}
+
+/* Tables: chrome.css only imports prosemirror-tables' own base CSS
+   (table-layout, the column-resize handle's positioning), which ships
+   with zero border/background of its own by design — this addon is
+   headless, "give a table borders" is a visual choice like any other. */
+.plain-demo .milkdown-table-block table {
+  border-collapse: collapse;
+}
+
+.plain-demo .milkdown-table-block th,
+.plain-demo .milkdown-table-block td {
+  border: 1px solid #ddd;
+  padding: 0.35rem 0.6rem;
+}
+
+.plain-demo .milkdown-table-block th {
+  background: #f7f6f3;
+  font-weight: 600;
 }
 
 /* No `display` here: .milkdown-toolbar's is gated by data-show above,
@@ -104,6 +180,93 @@ html {
   background: #f0eee9;
 }
 
+/* The static top bar's actual button row: Crepe names these classes
+   differently from the floating toolbar's `.toolbar-item` above
+   (`top-bar-item`, `top-bar-heading-selector`, ...), and nests them inside
+   a `.top-bar-inner` wrapper that needs its own `display: flex` — without
+   it `.top-bar-inner` defaults to `display: block` and every icon/selector
+   stacks vertically instead of spreading out in a row. */
+.plain-demo .top-bar-inner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.plain-demo .top-bar-divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 0.25rem;
+  background: #ddd;
+}
+
+.plain-demo .top-bar-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.plain-demo .top-bar-item.active,
+.plain-demo .top-bar-item:hover {
+  background: #f0eee9;
+}
+
+.plain-demo .top-bar-heading-selector {
+  position: relative;
+}
+
+.plain-demo .top-bar-heading-button {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: 1.75rem;
+  padding: 0 0.4rem;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.plain-demo .top-bar-heading-button:hover {
+  background: #f0eee9;
+}
+
+.plain-demo .top-bar-heading-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  min-width: 9rem;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
+  padding: 0.25rem;
+}
+
+.plain-demo .top-bar-heading-option {
+  display: block;
+  width: 100%;
+  padding: 0.3rem 0.5rem;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.8rem;
+}
+
+.plain-demo .top-bar-heading-option.active,
+.plain-demo .top-bar-heading-option:hover {
+  background: #f0eee9;
+}
+
 .plain-demo .milkdown-block-handle {
   gap: 0.15rem;
   background: #fff;
@@ -127,16 +290,88 @@ html {
   background: #f0eee9;
 }
 
+.plain-demo .link-preview,
+.plain-demo .link-edit {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.5rem;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
+}
+
+.plain-demo .link-display {
+  max-width: 15rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.85rem;
+}
+
+.plain-demo .link-icon,
+.plain-demo .milkdown-link-preview .button,
+.plain-demo .milkdown-link-edit .button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.plain-demo .link-icon:hover,
+.plain-demo .milkdown-link-preview .button:hover,
+.plain-demo .milkdown-link-edit .button:hover {
+  background: #f0eee9;
+}
+
+.plain-demo .input-area {
+  width: 12rem;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.85rem;
+}
+
+/* No `display` here, same reason as `.milkdown-toolbar` above: this
+   selector's specificity ties chrome.css's `[data-show="true"]` gate, and a
+   tie is broken by source order, not by data-show's actual value — so an
+   unconditional `display: flex` here would win regardless of data-show and
+   defeat the gate again. See the `[data-show="true"]` rule below. */
 .plain-demo .milkdown-slash-menu {
   width: 16rem;
   max-height: 20rem;
   overflow: hidden;
-  display: flex;
   flex-direction: column;
   background: #fff;
   border: 1px solid #ddd;
   border-radius: 8px;
   box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
+}
+
+.plain-demo .milkdown-slash-menu[data-show="true"] {
+  display: flex;
+}
+
+/* Vue mounts the menu's own component root as an unclassed `<div>` one
+   level inside `.milkdown-slash-menu` (it holds `.tab-group` and
+   `.menu-groups`, but is neither of them) — without making that
+   in-between div a flex column itself, it's a `display: block` box that
+   simply grows to its content's full height, and `.menu-groups`'s own
+   `flex: 1` two rules below has no real flex container to size against.
+   `min-height: 0` is required on both this div and `.menu-groups`: a flex
+   item's default `min-height: auto` refuses to shrink below its content's
+   intrinsic height, which is exactly what needs to happen here for
+   `.menu-groups` to become shorter than its full item list and actually
+   scroll. */
+.plain-demo .milkdown-slash-menu > div {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .plain-demo .milkdown-slash-menu .tab-group ul {
@@ -158,9 +393,22 @@ html {
   background: #f0eee9;
 }
 
+/* `flex: 1` + `min-height: 0` is what actually makes this scroll: without
+   `min-height: 0`, a flex child refuses to shrink below its content's
+   natural height, so `.menu-groups` never becomes shorter than its full
+   item list — it just overflows the `.milkdown-slash-menu` wrapper above
+   (clipped by that wrapper's own `overflow: hidden`) instead of scrolling
+   internally, and `overflow-y: auto` here never engages because nothing
+   is actually being clipped from this element's own point of view. That
+   also breaks the tab-group's "jump to section" click: it sets this
+   element's `scrollTop`, which is a no-op on a box that was never
+   scrollable to begin with. */
 .plain-demo .milkdown-slash-menu .menu-groups {
   overflow-y: auto;
+  flex: 1;
+  min-height: 0;
   padding: 0.4rem;
+  scroll-behavior: smooth;
 }
 
 .plain-demo .milkdown-slash-menu h6 {
@@ -257,7 +505,67 @@ html {
 /* ---- Tailwind section: utility classes only, no DaisyUI components. ---- */
 
 .tailwind-demo [data-milkdown-ember-editor] {
-  @apply rounded-lg border border-slate-300 p-4 min-h-40 focus-within:border-slate-500;
+  @apply flex min-h-40 cursor-text flex-col rounded-lg border border-slate-300 p-4 focus-within:border-slate-500;
+}
+
+/* Crepe mounts a `.milkdown` wrapper, then `.ProseMirror`, inside the
+   root we hand it. Both need to be told to stretch, not just the root:
+   `.ProseMirror` otherwise only grows to fit its own content, so on a
+   short document the actually-focusable area is much smaller than this
+   box — clicking the empty space below the text does nothing, unlike a
+   real textarea. */
+.tailwind-demo [data-milkdown-ember-editor] .milkdown {
+  @apply flex flex-1 flex-col;
+}
+
+.tailwind-demo [data-milkdown-ember-editor] .ProseMirror {
+  @apply flex-1;
+}
+
+/* Bullet/ordered/task list items: Crepe renders each as
+   `<li class="list-item"><div class="label-wrapper">…icon…</div><div
+   class="children">…text…</div></li>` — two block-level divs, which stack
+   vertically unless `.list-item` is given `flex` itself. */
+.tailwind-demo .list-item {
+  @apply flex items-start gap-2;
+}
+
+.tailwind-demo .list-item > .children {
+  @apply min-w-0 flex-1;
+}
+
+/* The checkbox/bullet icon is an inline SVG with its own hardcoded
+   width="24" height="24" attributes — a size on the wrapper alone doesn't
+   shrink it, so it was overflowing this box before this rule existed. Size
+   the svg itself; CSS wins over the SVG's own attributes. */
+.tailwind-demo .label-wrapper {
+  @apply flex h-6 w-6 shrink-0 items-center justify-center;
+}
+
+.tailwind-demo .label-wrapper svg {
+  @apply h-[1.125rem] w-[1.125rem];
+}
+
+.tailwind-demo .label-wrapper .checked,
+.tailwind-demo .label-wrapper .unchecked {
+  @apply cursor-pointer;
+}
+
+/* Tables: chrome.css only imports prosemirror-tables' own base CSS
+   (table-layout, the column-resize handle's positioning), which ships
+   with zero border/background of its own by design — this addon is
+   headless, "give a table borders" is a visual choice like any other. */
+.tailwind-demo .milkdown-table-block table {
+  @apply border-collapse;
+}
+
+.tailwind-demo .milkdown-table-block th,
+.tailwind-demo .milkdown-table-block td {
+  @apply border border-slate-300 px-2.5 py-1.5;
+}
+
+.tailwind-demo .milkdown-table-block th {
+  @apply bg-slate-50 font-semibold;
 }
 
 /* No display utility here, same reason as the plain-CSS section above:
@@ -279,6 +587,48 @@ html {
   @apply bg-slate-200;
 }
 
+/* The static top bar's actual button row: Crepe names these classes
+   differently from the floating toolbar's `.toolbar-item` above
+   (`top-bar-item`, `top-bar-heading-selector`, ...), and nests them inside
+   a `.top-bar-inner` wrapper that needs its own `flex` — without it
+   `.top-bar-inner` defaults to `display: block` and every icon/selector
+   stacks vertically instead of spreading out in a row. */
+.tailwind-demo .top-bar-inner {
+  @apply flex flex-wrap items-center;
+}
+
+.tailwind-demo .top-bar-divider {
+  @apply mx-1 w-px self-stretch bg-slate-300;
+}
+
+.tailwind-demo .top-bar-item {
+  @apply flex h-7 w-7 cursor-pointer items-center justify-center rounded hover:bg-slate-100;
+}
+
+.tailwind-demo .top-bar-item.active {
+  @apply bg-slate-200;
+}
+
+.tailwind-demo .top-bar-heading-selector {
+  @apply relative;
+}
+
+.tailwind-demo .top-bar-heading-button {
+  @apply flex h-7 cursor-pointer items-center gap-1 rounded px-1.5 text-xs hover:bg-slate-100;
+}
+
+.tailwind-demo .top-bar-heading-dropdown {
+  @apply absolute top-full left-0 z-20 min-w-36 rounded-md border border-slate-300 bg-white p-1 shadow-lg;
+}
+
+.tailwind-demo .top-bar-heading-option {
+  @apply block w-full cursor-pointer rounded px-2 py-1 text-left text-xs hover:bg-slate-100;
+}
+
+.tailwind-demo .top-bar-heading-option.active {
+  @apply bg-slate-100;
+}
+
 .tailwind-demo .milkdown-block-handle {
   @apply gap-0.5 rounded-md border border-slate-300 bg-white p-0.5;
 }
@@ -291,8 +641,48 @@ html {
   @apply bg-slate-200;
 }
 
+.tailwind-demo .link-preview,
+.tailwind-demo .link-edit {
+  @apply flex items-center gap-1.5 rounded-md border border-slate-300 bg-white p-1.5 shadow-lg;
+}
+
+.tailwind-demo .link-display {
+  @apply max-w-60 overflow-hidden text-ellipsis whitespace-nowrap text-sm;
+}
+
+.tailwind-demo .link-icon,
+.tailwind-demo .milkdown-link-preview .button,
+.tailwind-demo .milkdown-link-edit .button {
+  @apply flex h-6 w-6 cursor-pointer items-center justify-center rounded hover:bg-slate-100;
+}
+
+.tailwind-demo .input-area {
+  @apply w-48 border-none bg-transparent text-sm outline-none;
+}
+
+/* No `flex` utility here, same reason as `.milkdown-toolbar` above: it
+   would defeat chrome.css's `[data-show="true"]` gate. See the
+   `[data-show="true"]` rule below. */
 .tailwind-demo .milkdown-slash-menu {
-  @apply flex w-64 max-h-80 flex-col overflow-hidden rounded-lg border border-slate-300 bg-white shadow-lg;
+  @apply w-64 max-h-80 flex-col overflow-hidden rounded-lg border border-slate-300 bg-white shadow-lg;
+}
+
+.tailwind-demo .milkdown-slash-menu[data-show="true"] {
+  @apply flex;
+}
+
+/* Vue mounts the menu's own component root as an unclassed `<div>` one
+   level inside `.milkdown-slash-menu` (it holds `.tab-group` and
+   `.menu-groups`, but is neither of them) — without making that
+   in-between div a flex column itself, it's a `display: block` box that
+   simply grows to its content's full height, and `.menu-groups`'s own
+   `flex-1` below has no real flex container to size against. `min-h-0` is
+   required on both this div and `.menu-groups`: a flex item's default
+   `min-height: auto` refuses to shrink below its content's intrinsic
+   height, which is exactly what needs to happen here for `.menu-groups`
+   to become shorter than its full item list and actually scroll. */
+.tailwind-demo .milkdown-slash-menu > div {
+  @apply flex min-h-0 flex-1 flex-col;
 }
 
 .tailwind-demo .milkdown-slash-menu .tab-group ul {
@@ -307,8 +697,16 @@ html {
   @apply bg-slate-100;
 }
 
+/* `flex-1` + `min-h-0` is what actually makes this scroll: without
+   `min-height: 0`, a flex child refuses to shrink below its content's
+   natural height, so this never becomes shorter than its full item list —
+   it just overflows the `.milkdown-slash-menu` wrapper above (clipped by
+   that wrapper's own `overflow: hidden`) instead of scrolling internally,
+   and `overflow-y-auto` never engages. That also breaks the tab-group's
+   "jump to section" click: it sets this element's `scrollTop`, a no-op on
+   a box that was never scrollable to begin with. */
 .tailwind-demo .milkdown-slash-menu .menu-groups {
-  @apply overflow-y-auto p-2;
+  @apply min-h-0 flex-1 scroll-smooth overflow-y-auto p-2;
 }
 
 .tailwind-demo .milkdown-slash-menu h6 {
@@ -375,7 +773,68 @@ html {
 /* ---- DaisyUI section: component classes on top of Tailwind. ---- */
 
 .daisy-demo [data-milkdown-ember-editor] {
-  @apply card card-border bg-base-100 p-4 min-h-40;
+  @apply card card-border bg-base-100 min-h-40 cursor-text p-4;
+}
+
+/* Crepe mounts a `.milkdown` wrapper, then `.ProseMirror`, inside the
+   root we hand it. Both need to be told to stretch, not just the root
+   (DaisyUI's `card` already makes the root `display: flex`):
+   `.ProseMirror` otherwise only grows to fit its own content, so on a
+   short document the actually-focusable area is much smaller than this
+   box — clicking the empty space below the text does nothing, unlike a
+   real textarea. */
+.daisy-demo [data-milkdown-ember-editor] .milkdown {
+  @apply flex flex-1 flex-col;
+}
+
+.daisy-demo [data-milkdown-ember-editor] .ProseMirror {
+  @apply flex-1;
+}
+
+/* Bullet/ordered/task list items: Crepe renders each as
+   `<li class="list-item"><div class="label-wrapper">…icon…</div><div
+   class="children">…text…</div></li>` — two block-level divs, which stack
+   vertically unless `.list-item` is given `flex` itself. */
+.daisy-demo .list-item {
+  @apply flex items-start gap-2;
+}
+
+.daisy-demo .list-item > .children {
+  @apply min-w-0 flex-1;
+}
+
+/* The checkbox/bullet icon is an inline SVG with its own hardcoded
+   width="24" height="24" attributes — a size on the wrapper alone doesn't
+   shrink it, so it was overflowing this box before this rule existed. Size
+   the svg itself; CSS wins over the SVG's own attributes. */
+.daisy-demo .label-wrapper {
+  @apply flex h-6 w-6 shrink-0 items-center justify-center;
+}
+
+.daisy-demo .label-wrapper svg {
+  @apply h-[1.125rem] w-[1.125rem];
+}
+
+.daisy-demo .label-wrapper .checked,
+.daisy-demo .label-wrapper .unchecked {
+  @apply cursor-pointer;
+}
+
+/* Tables: chrome.css only imports prosemirror-tables' own base CSS
+   (table-layout, the column-resize handle's positioning), which ships
+   with zero border/background of its own by design — this addon is
+   headless, "give a table borders" is a visual choice like any other. */
+.daisy-demo .milkdown-table-block table {
+  @apply border-collapse;
+}
+
+.daisy-demo .milkdown-table-block th,
+.daisy-demo .milkdown-table-block td {
+  @apply border border-base-300 px-2.5 py-1.5;
+}
+
+.daisy-demo .milkdown-table-block th {
+  @apply bg-base-200 font-semibold;
 }
 
 /* DaisyUI's `join` class itself sets `display`, so @apply-ing it here
@@ -400,6 +859,48 @@ html {
   @apply btn-active;
 }
 
+/* The static top bar's actual button row: Crepe names these classes
+   differently from the floating toolbar's `.toolbar-item` above
+   (`top-bar-item`, `top-bar-heading-selector`, ...), and nests them inside
+   a `.top-bar-inner` wrapper that needs its own `flex` — without it
+   `.top-bar-inner` defaults to `display: block` and every icon/selector
+   stacks vertically instead of spreading out in a row. */
+.daisy-demo .top-bar-inner {
+  @apply flex flex-wrap items-center;
+}
+
+.daisy-demo .top-bar-divider {
+  @apply mx-1 w-px self-stretch bg-base-300;
+}
+
+.daisy-demo .top-bar-item {
+  @apply btn btn-ghost btn-xs;
+}
+
+.daisy-demo .top-bar-item.active {
+  @apply btn-active;
+}
+
+.daisy-demo .top-bar-heading-selector {
+  @apply relative;
+}
+
+.daisy-demo .top-bar-heading-button {
+  @apply btn btn-ghost btn-xs;
+}
+
+.daisy-demo .top-bar-heading-dropdown {
+  @apply menu absolute top-full left-0 z-20 min-w-36 rounded-box border border-base-300 bg-base-100 p-1 shadow-lg;
+}
+
+.daisy-demo .top-bar-heading-option {
+  @apply block w-full cursor-pointer rounded px-2 py-1 text-left text-xs hover:bg-base-200;
+}
+
+.daisy-demo .top-bar-heading-option.active {
+  @apply bg-base-200;
+}
+
 .daisy-demo .milkdown-block-handle {
   @apply gap-0.5 rounded-box border border-base-300 bg-base-100 p-0.5;
 }
@@ -412,8 +913,50 @@ html {
   @apply bg-base-300;
 }
 
+.daisy-demo .link-preview,
+.daisy-demo .link-edit {
+  @apply flex items-center gap-1.5 rounded-box border border-base-300 bg-base-100 p-1.5 shadow-lg;
+}
+
+.daisy-demo .link-display {
+  @apply max-w-60 overflow-hidden text-ellipsis whitespace-nowrap text-sm;
+}
+
+.daisy-demo .link-icon,
+.daisy-demo .milkdown-link-preview .button,
+.daisy-demo .milkdown-link-edit .button {
+  @apply btn btn-ghost btn-xs;
+}
+
+.daisy-demo .input-area {
+  @apply w-48 border-none bg-transparent text-sm outline-none;
+}
+
+/* No `card` or `flex` here, same reason as `.milkdown-toolbar` above:
+   DaisyUI's `card` class itself sets `display: flex` (like `join` does
+   elsewhere in this file), so applying it unconditionally would defeat
+   chrome.css's `[data-show="true"]` gate. See the `[data-show="true"]` rule
+   below. */
 .daisy-demo .milkdown-slash-menu {
-  @apply card card-border bg-base-100 flex max-h-80 w-64 flex-col overflow-hidden shadow-lg;
+  @apply card-border bg-base-100 max-h-80 w-64 flex-col overflow-hidden shadow-lg;
+}
+
+.daisy-demo .milkdown-slash-menu[data-show="true"] {
+  @apply card flex;
+}
+
+/* Vue mounts the menu's own component root as an unclassed `<div>` one
+   level inside `.milkdown-slash-menu` (it holds `.tab-group` and
+   `.menu-groups`, but is neither of them) — without making that
+   in-between div a flex column itself, it's a `display: block` box that
+   simply grows to its content's full height, and `.menu-groups`'s own
+   `flex-1` below has no real flex container to size against. `min-h-0` is
+   required on both this div and `.menu-groups`: a flex item's default
+   `min-height: auto` refuses to shrink below its content's intrinsic
+   height, which is exactly what needs to happen here for `.menu-groups`
+   to become shorter than its full item list and actually scroll. */
+.daisy-demo .milkdown-slash-menu > div {
+  @apply flex min-h-0 flex-1 flex-col;
 }
 
 .daisy-demo .milkdown-slash-menu .tab-group ul {
@@ -428,8 +971,16 @@ html {
   @apply bg-base-200;
 }
 
+/* `flex-1` + `min-h-0` is what actually makes this scroll: without
+   `min-height: 0`, a flex child refuses to shrink below its content's
+   natural height, so this never becomes shorter than its full item list —
+   it just overflows the `.milkdown-slash-menu` wrapper above (clipped by
+   that wrapper's own `overflow: hidden`) instead of scrolling internally,
+   and `overflow-y-auto` never engages. That also breaks the tab-group's
+   "jump to section" click: it sets this element's `scrollTop`, a no-op on
+   a box that was never scrollable to begin with. */
 .daisy-demo .milkdown-slash-menu .menu-groups {
-  @apply overflow-y-auto p-2;
+  @apply min-h-0 flex-1 scroll-smooth overflow-y-auto p-2;
 }
 
 .daisy-demo .milkdown-slash-menu h6 {
