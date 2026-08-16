@@ -559,3 +559,64 @@
 [data-diff-block][data-diff-status="changed"] {
   background: var(--milkdown-ember-diff-changed-bg, #fff8e1);
 }
+
+/* The Image feature: chrome.css covers its layout and the resize
+   handle/operation icons' positioning; this is purely the color layer on
+   top. --milkdown-ember-image-operation-bg/-text get their own pair rather
+   than reusing the mention popover's dark-chip colors — same look by
+   default, but a consumer re-theming one shouldn't accidentally re-theme
+   the other. */
+.milkdown-image-inline .empty-image-inline,
+.milkdown-image-block .image-edit {
+  background: var(--milkdown-ember-surface, #fff);
+}
+
+.milkdown-image-inline .empty-image-inline .image-icon svg,
+.milkdown-image-block .image-edit .image-icon svg {
+  fill: var(--milkdown-ember-text-muted, #57534e);
+}
+
+.milkdown-image-inline .empty-image-inline .link-importer .placeholder,
+.milkdown-image-block .image-edit .link-importer .placeholder {
+  color: var(--milkdown-ember-text-muted, #57534e);
+}
+
+.milkdown-image-inline
+  .empty-image-inline
+  .link-importer
+  .placeholder
+  .uploader,
+.milkdown-image-block .image-edit .link-importer .placeholder .uploader,
+.milkdown-image-inline .empty-image-inline .confirm {
+  color: var(--milkdown-ember-text, #1c1915);
+}
+
+.milkdown-image-inline .empty-image-inline .confirm:hover {
+  background: var(--milkdown-ember-surface-hover, #f0eee9);
+}
+
+.milkdown-image-inline.empty.selected .empty-image-inline {
+  box-shadow: var(--milkdown-ember-shadow, 0 8px 24px rgb(0 0 0 / 12%));
+}
+
+.milkdown-image-block .image-edit .confirm {
+  border: 1px solid var(--milkdown-ember-border, #ddd);
+  background: var(--milkdown-ember-surface, #fff);
+}
+
+.milkdown-image-block .image-edit .confirm:hover {
+  background: var(--milkdown-ember-surface-hover, #f0eee9);
+}
+
+.milkdown-image-block .caption-input {
+  color: var(--milkdown-ember-text-muted, #57534e);
+}
+
+.milkdown-image-block .image-wrapper .operation > .operation-item {
+  color: var(--milkdown-ember-image-operation-text, #f4efe4);
+  background: var(--milkdown-ember-image-operation-bg, #1c1915);
+}
+
+.milkdown-image-block .image-wrapper .image-resize-handle {
+  background: var(--milkdown-ember-border, #ddd);
+}

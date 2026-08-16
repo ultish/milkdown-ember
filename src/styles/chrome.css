@@ -522,3 +522,301 @@ img.ProseMirror-separator {
   display: flex;
   align-items: center;
 }
+
+/*
+ * Category 6: the Image feature's own chrome (on by default). Crepe ships
+ * this feature's CSS as its own sibling theme file too
+ * (`@milkdown/crepe/theme/common/image-block.css`, same convention as
+ * Category 0's table/katex imports) but that file is skipped rather than
+ * imported wholesale: every color in it routes through Crepe's own
+ * `--crepe-color-*` custom properties, which this addon never defines (it
+ * imports none of Crepe's theme), so importing it verbatim wouldn't render
+ * broken, it would render with several properties silently no-op'd by an
+ * undefined custom property — an accident, not a choice. What's below is
+ * the same file with every color declaration removed: without it, the
+ * inline "paste a link or upload" widget has no layout at all, the block
+ * image's caption/edit panel doesn't lay out as a row, and — the bug this
+ * was written to fix — the hover-revealed caption/delete/upload icons and
+ * the drag-to-resize handle along the image's bottom edge have no
+ * `position: absolute`, so they render in normal document flow above the
+ * image instead of floating over its corner and edge.
+ */
+
+.milkdown-image-inline {
+  outline: none;
+  display: inline-flex;
+  vertical-align: text-bottom;
+}
+
+.milkdown-image-inline input {
+  background: transparent;
+  outline: none;
+  border: 0;
+}
+
+.milkdown-image-inline > .empty-image-inline {
+  display: inline-flex;
+}
+
+.milkdown-image-inline > .empty-image-inline .confirm {
+  cursor: pointer;
+}
+
+.milkdown-image-inline > .empty-image-inline .link-importer {
+  position: relative;
+  flex: 1;
+}
+
+.milkdown-image-inline > .empty-image-inline .link-importer > .link-input-area {
+  width: 208px;
+  display: flex;
+}
+
+.milkdown-image-inline > .empty-image-inline .link-importer .placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  cursor: text;
+}
+
+.milkdown-image-inline
+  > .empty-image-inline
+  .link-importer
+  .placeholder
+  .uploader {
+  cursor: pointer;
+  display: flex;
+}
+
+.milkdown-image-inline.selected {
+  outline: 1px solid currentColor;
+}
+
+.milkdown-image-inline .empty-image-inline {
+  align-items: center;
+  padding: 4px 10px;
+  gap: 10px;
+  border-radius: 8px;
+}
+
+.milkdown-image-inline .empty-image-inline .image-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.milkdown-image-inline .empty-image-inline .image-icon {
+  padding: 3px;
+  width: 24px;
+  height: 24px;
+}
+
+.milkdown-image-inline .empty-image-inline .link-importer {
+  height: 24px;
+}
+
+.milkdown-image-inline .empty-image-inline .link-importer .link-input-area {
+  line-height: 24px;
+}
+
+.milkdown-image-inline
+  .empty-image-inline
+  .link-importer
+  .placeholder
+  .uploader {
+  gap: 8px;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.milkdown-image-inline .empty-image-inline .link-importer .placeholder .text {
+  margin-left: 8px;
+}
+
+.milkdown-image-inline .empty-image-inline .confirm svg {
+  width: 18px;
+  height: 18px;
+}
+
+.milkdown-image-inline .empty-image-inline .confirm {
+  display: flex;
+  width: 24px;
+  height: 24px;
+  padding: 3px;
+  border-radius: 8px;
+}
+
+.milkdown-image-block {
+  outline: none;
+  margin: 4px 0;
+  display: block;
+}
+
+.milkdown-image-block > .image-wrapper {
+  position: relative;
+  width: fit-content;
+  margin: 0 auto;
+  min-width: 100px;
+}
+
+.milkdown-image-block > .image-wrapper .operation {
+  position: absolute;
+  display: flex;
+}
+
+.milkdown-image-block > .image-wrapper .operation > .operation-item {
+  cursor: pointer;
+}
+
+.milkdown-image-block > .image-wrapper img {
+  max-width: 100%;
+  min-height: 100px;
+  display: block;
+  object-fit: cover;
+}
+
+.milkdown-image-block > .image-wrapper > .image-resize-handle {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.milkdown-image-block > .image-wrapper > .image-resize-handle:hover {
+  cursor: row-resize;
+}
+
+.milkdown-image-block input {
+  background: transparent;
+  outline: none;
+  border: 0;
+}
+
+.milkdown-image-block > .caption-input {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
+.milkdown-image-block > .image-edit {
+  display: flex;
+}
+
+.milkdown-image-block > .image-edit .confirm {
+  cursor: pointer;
+}
+
+.milkdown-image-block > .image-edit .link-importer {
+  position: relative;
+  flex: 1;
+}
+
+.milkdown-image-block > .image-edit .link-importer > .link-input-area {
+  width: 100%;
+}
+
+.milkdown-image-block > .image-edit .link-importer .placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  cursor: text;
+}
+
+.milkdown-image-block > .image-edit .link-importer .placeholder .uploader {
+  cursor: pointer;
+  display: flex;
+}
+
+.milkdown-image-block.selected > .image-wrapper,
+.milkdown-image-block.selected > .image-edit:not(:has(input:focus)) {
+  outline: 2px solid currentColor;
+}
+
+.milkdown-image-block .image-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.milkdown-image-block .image-wrapper .operation {
+  gap: 12px;
+  right: 12px;
+  top: 12px;
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+.milkdown-image-block:hover > .image-wrapper .operation {
+  opacity: 1;
+}
+
+.milkdown-image-block .image-wrapper .operation > .operation-item {
+  padding: 4px;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+}
+
+.milkdown-image-block .image-wrapper .operation > .operation-item svg {
+  width: 24px;
+  height: 24px;
+}
+
+.milkdown-image-block .image-wrapper .image-resize-handle {
+  height: 4px;
+  bottom: -2px;
+  max-width: 160px;
+  width: 100%;
+  opacity: 0;
+  transition: all 0.2s;
+  border-radius: 4px;
+}
+
+.milkdown-image-block:hover > .image-wrapper .image-resize-handle {
+  opacity: 1;
+}
+
+.milkdown-image-block .caption-input {
+  margin: 4px auto;
+}
+
+.milkdown-image-block .image-edit {
+  align-items: center;
+  padding: 16px 24px;
+  gap: 16px;
+  height: 56px;
+}
+
+.milkdown-image-block .image-edit .image-icon svg {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.milkdown-image-block .image-edit .link-importer .link-input-area {
+  line-height: 24px;
+}
+
+.milkdown-image-block .image-edit .link-importer .placeholder .uploader {
+  gap: 8px;
+  justify-content: center;
+  transition: color 0.2s;
+  font-weight: 600;
+}
+
+.milkdown-image-block .image-edit .link-importer .placeholder .text {
+  margin-left: 8px;
+}
+
+.milkdown-image-block .image-edit .confirm {
+  line-height: 40px;
+  padding: 0 24px;
+  border-radius: 100px;
+  font-weight: 600;
+}

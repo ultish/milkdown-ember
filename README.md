@@ -230,6 +230,18 @@ instead of floating over it; `.language-list` (the dropdown's item list) had no 
 cap or `overflow-y: auto`, the identical bug already described for the "+" menu's
 `.menu-groups` above, just in a different feature's copy of the same pattern.
 
+**6. The Image feature's own chrome** (on by default). Crepe ships this one's CSS as its
+own sibling theme file too (`@milkdown/crepe/theme/common/image-block.css`, same
+convention as Category 0's imports), but `chrome.css` carries a color-stripped copy of it
+rather than importing it: every color in that file routes through Crepe's own
+`--crepe-color-*` custom properties, which this addon never defines, so importing it
+verbatim would silently no-op those declarations against an undefined custom property.
+Without the rules that are left, the inline "paste a link or upload" widget has no layout
+at all, the block image's caption/edit panel doesn't lay out as a row, and — the bug this
+was written for — the hover-revealed caption/delete/upload icons and the drag-to-resize
+handle along the image's bottom edge have no `position: absolute`, so they render in
+normal document flow above the image instead of floating over its corner and edge.
+
 ### theme.css, and re-theming it
 
 Every color, radius, and shadow in `theme.css` is written as
@@ -291,6 +303,8 @@ behavior, cursors — is layout rather than theme, and isn't parameterized.
 | `--milkdown-ember-diff-added-bg` | `#e6ffed` | The inline added-text decoration |
 | `--milkdown-ember-diff-removed-bg` | `#ffeef0` | The inline removed-text decoration |
 | `--milkdown-ember-diff-changed-bg` | `#fff8e1` | A changed block inside a side-by-side pane |
+| `--milkdown-ember-image-operation-bg` | `#1c1915` | The circular caption/delete/upload icon chip shown on hover over a block image |
+| `--milkdown-ember-image-operation-text` | `#f4efe4` | Those icons' color |
 | `--milkdown-ember-font-family` | `-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif` | The editor's font stack |
 
 If you'd rather build your own look from scratch, skip `theme.css` and style the hooks
@@ -317,6 +331,9 @@ the addon and Crepe expose directly:
 | `blockquote` | Same story as tables — a plain node with no border/indent styling of its own; not a `chrome.css` concern at all, just a hook worth styling |
 | `.milkdown-code-block .tools` / `.language-button` / `.tools-button-group` | The row above a code block holding the language picker and the copy button |
 | `.milkdown-code-block .language-picker` / `.list-wrapper` / `.search-box` / `.language-list-item` | The language dropdown itself — `chrome.css` handles its position/scroll, this is the visual layer |
+| `.milkdown-image-block` / `.milkdown-image-inline` | A block image and an inline one; `.empty-image-inline` and `.image-edit` are the "paste a link or upload" sub-views each shows before a source is set |
+| `.milkdown-image-block .operation` / `.operation-item` | The caption/delete/upload icon chips revealed over a block image's top-right corner on hover — `chrome.css` positions and reveals them, this is the visual layer |
+| `.milkdown-image-block .image-resize-handle` / `.caption-input` | The drag-to-resize bar along the image's bottom edge (also `chrome.css`-positioned, `row-resize` on hover), and the caption line under the image |
 | `[data-milkdown-ember-mention-popover]` | The mention suggestion popover |
 | `[data-mention-candidate]` / `[data-active]` | Candidate rows / the keyboard-highlighted one |
 | `.milkdown-diff-added` / `.milkdown-diff-removed` | Inline diff decorations |
