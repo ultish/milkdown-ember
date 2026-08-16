@@ -7,6 +7,14 @@
 
 @import "tailwindcss";
 
+/* The addon's own shipped structural CSS (positioning + show/hide for
+   Crepe's floating widgets), imported from source rather than the
+   package name so `pnpm start` works without a prior `pnpm build` —
+   dist/styles/chrome.css doesn't exist until the addon is built, this
+   file is copied there verbatim at build time. See src/styles/chrome.css
+   for what it does and why it isn't just demo-only CSS. */
+@import "../src/styles/chrome.css";
+
 @plugin 'daisyui' {
   themes:
     light --default,
@@ -33,45 +41,21 @@ html {
 }
 
 /*
- * Baseline positioning for every floating widget Crepe mounts, not a
- * styling choice, a functional necessity for ANY consumer: milkdown-ember
- * ships zero CSS (headless by design), and none of these are hidden or
- * floated without it. All six go through one of Milkdown's own Provider
- * classes (TooltipProvider, SlashProvider, BlockProvider), which every
- * one of them uses the same data-show="true"/"false" convention for, so
- * one rule covers all of them: the selection toolbar, the fixed top bar's
- * heading dropdown, the mention popover this addon builds, the link
- * preview/edit tooltips, and BlockEdit's slash menu. The drag handle
- * (.milkdown-block-handle) is positioned the same way but has no
- * data-show gate, it's just always floating next to the active block.
- */
-.milkdown-toolbar,
-.milkdown-link-preview,
-.milkdown-link-edit,
-.milkdown-slash-menu,
-[data-milkdown-ember-mention-popover] {
-  @apply absolute z-10;
-  display: none;
-}
-
-.milkdown-toolbar[data-show="true"],
-.milkdown-link-preview[data-show="true"],
-.milkdown-link-edit[data-show="true"],
-.milkdown-slash-menu[data-show="true"],
-[data-milkdown-ember-mention-popover][data-show="true"] {
-  display: block;
-}
-
-.milkdown-block-handle {
-  @apply absolute z-10 flex gap-0.5;
-}
-
-/*
- * milkdown-ember ships no visual theme (headless). Every section below
- * styles the same [data-milkdown-ember-editor] / [data-toolbar] /
- * [data-mention-candidate] / [data-milkdown-diff-popover] / [data-diff-*]
- * hooks the addon exposes, just through a different styling system, to
- * show the same markup works with any of them.
+ * Widget positioning/show-hide comes from src/styles/chrome.css, imported
+ * above — it's the addon's own structural CSS, not demo-only, see that
+ * file for what it does and why. Everything below is purely visual
+ * theming: milkdown-ember ships no visual theme (headless), and each
+ * section styles the same [data-milkdown-ember-editor] / [data-toolbar] /
+ * [data-mention-candidate] / [data-diff-*] hooks the addon exposes, plus
+ * chrome.css's own classes, through a different styling system, to show
+ * the same markup works with any of them. IMPORTANT: none of the rules
+ * below may redeclare `display` on `.milkdown-toolbar` or
+ * `.milkdown-block-handle` unconditionally — a section selector like
+ * `.plain-demo .milkdown-toolbar` has higher specificity than
+ * chrome.css's bare `.milkdown-toolbar` rule, so doing that would defeat
+ * its data-show gate again, which is exactly the bug that shipped here:
+ * `.plain-demo .milkdown-toolbar { display: flex }` unconditionally
+ * overrode `display: none` regardless of data-show.
  */
 
 /* ---- Plain CSS section: no framework, hand-written rules. ---- */
@@ -89,9 +73,12 @@ html {
   border-color: #888;
 }
 
+/* No `display` here: .milkdown-toolbar's is gated by data-show above,
+   redeclaring it here (even to the same value) would win on specificity
+   and defeat that gate again. .milkdown-top-bar isn't data-show gated
+   (see the baseline comment above), so it gets its own rule below. */
 .plain-demo .milkdown-toolbar,
 .plain-demo .milkdown-top-bar {
-  display: flex;
   gap: 0.25rem;
   background: #fff;
   border: 1px solid #ddd;
@@ -100,6 +87,7 @@ html {
 }
 
 .plain-demo .milkdown-top-bar {
+  display: flex;
   margin-bottom: 0.5rem;
 }
 
@@ -113,6 +101,90 @@ html {
 
 .plain-demo .toolbar-item.active,
 .plain-demo .toolbar-item:hover {
+  background: #f0eee9;
+}
+
+.plain-demo .milkdown-block-handle {
+  gap: 0.15rem;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 0.15rem;
+}
+
+.plain-demo .operation-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.plain-demo .operation-item:hover,
+.plain-demo .operation-item.active {
+  background: #f0eee9;
+}
+
+.plain-demo .milkdown-slash-menu {
+  width: 16rem;
+  max-height: 20rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
+}
+
+.plain-demo .milkdown-slash-menu .tab-group ul {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.4rem;
+  border-bottom: 1px solid #eee;
+  list-style: none;
+}
+
+.plain-demo .milkdown-slash-menu .tab-group li {
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.plain-demo .milkdown-slash-menu .tab-group li.selected {
+  background: #f0eee9;
+}
+
+.plain-demo .milkdown-slash-menu .menu-groups {
+  overflow-y: auto;
+  padding: 0.4rem;
+}
+
+.plain-demo .milkdown-slash-menu h6 {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: #999;
+  margin: 0.5rem 0.4rem 0.2rem;
+}
+
+.plain-demo .milkdown-slash-menu .menu-group ul {
+  list-style: none;
+}
+
+.plain-demo .milkdown-slash-menu li[data-index] {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.plain-demo .milkdown-slash-menu li[data-index].hover {
   background: #f0eee9;
 }
 
@@ -188,13 +260,15 @@ html {
   @apply rounded-lg border border-slate-300 p-4 min-h-40 focus-within:border-slate-500;
 }
 
+/* No display utility here, same reason as the plain-CSS section above:
+   it would out-specificity the data-show gate on .milkdown-toolbar. */
 .tailwind-demo .milkdown-toolbar,
 .tailwind-demo .milkdown-top-bar {
-  @apply flex gap-1 rounded-md border border-slate-300 bg-white p-1;
+  @apply gap-1 rounded-md border border-slate-300 bg-white p-1;
 }
 
 .tailwind-demo .milkdown-top-bar {
-  @apply mb-2;
+  @apply flex mb-2;
 }
 
 .tailwind-demo .toolbar-item {
@@ -203,6 +277,54 @@ html {
 
 .tailwind-demo .toolbar-item.active {
   @apply bg-slate-200;
+}
+
+.tailwind-demo .milkdown-block-handle {
+  @apply gap-0.5 rounded-md border border-slate-300 bg-white p-0.5;
+}
+
+.tailwind-demo .operation-item {
+  @apply flex h-6 w-6 cursor-pointer items-center justify-center rounded hover:bg-slate-100;
+}
+
+.tailwind-demo .operation-item.active {
+  @apply bg-slate-200;
+}
+
+.tailwind-demo .milkdown-slash-menu {
+  @apply flex w-64 max-h-80 flex-col overflow-hidden rounded-lg border border-slate-300 bg-white shadow-lg;
+}
+
+.tailwind-demo .milkdown-slash-menu .tab-group ul {
+  @apply flex list-none gap-1 border-b border-slate-200 p-2;
+}
+
+.tailwind-demo .milkdown-slash-menu .tab-group li {
+  @apply cursor-pointer rounded px-2 py-0.5 text-xs;
+}
+
+.tailwind-demo .milkdown-slash-menu .tab-group li.selected {
+  @apply bg-slate-100;
+}
+
+.tailwind-demo .milkdown-slash-menu .menu-groups {
+  @apply overflow-y-auto p-2;
+}
+
+.tailwind-demo .milkdown-slash-menu h6 {
+  @apply mx-1 mt-2 mb-1 text-[0.7rem] tracking-wide text-slate-400 uppercase;
+}
+
+.tailwind-demo .milkdown-slash-menu .menu-group ul {
+  @apply list-none;
+}
+
+.tailwind-demo .milkdown-slash-menu li[data-index] {
+  @apply flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm;
+}
+
+.tailwind-demo .milkdown-slash-menu li[data-index].hover {
+  @apply bg-slate-100;
 }
 
 .tailwind-demo [data-milkdown-ember-mention-popover] {
@@ -256,13 +378,18 @@ html {
   @apply card card-border bg-base-100 p-4 min-h-40;
 }
 
+/* DaisyUI's `join` class itself sets `display`, so @apply-ing it here
+   would expand to a display declaration at this rule's specificity and
+   defeat .milkdown-toolbar's data-show gate the same way a raw `flex`
+   utility would; kept off the shared rule, applied only where display
+   isn't gated (.milkdown-top-bar, below). */
 .daisy-demo .milkdown-toolbar,
 .daisy-demo .milkdown-top-bar {
-  @apply join border border-base-300 rounded-box p-1;
+  @apply border border-base-300 rounded-box p-1;
 }
 
 .daisy-demo .milkdown-top-bar {
-  @apply mb-2;
+  @apply join mb-2;
 }
 
 .daisy-demo .toolbar-item {
@@ -271,6 +398,54 @@ html {
 
 .daisy-demo .toolbar-item.active {
   @apply btn-active;
+}
+
+.daisy-demo .milkdown-block-handle {
+  @apply gap-0.5 rounded-box border border-base-300 bg-base-100 p-0.5;
+}
+
+.daisy-demo .operation-item {
+  @apply flex h-6 w-6 cursor-pointer items-center justify-center rounded hover:bg-base-200;
+}
+
+.daisy-demo .operation-item.active {
+  @apply bg-base-300;
+}
+
+.daisy-demo .milkdown-slash-menu {
+  @apply card card-border bg-base-100 flex max-h-80 w-64 flex-col overflow-hidden shadow-lg;
+}
+
+.daisy-demo .milkdown-slash-menu .tab-group ul {
+  @apply menu menu-horizontal border-base-300 flex-nowrap gap-1 border-b p-2;
+}
+
+.daisy-demo .milkdown-slash-menu .tab-group li {
+  @apply cursor-pointer rounded px-2 py-0.5 text-xs;
+}
+
+.daisy-demo .milkdown-slash-menu .tab-group li.selected {
+  @apply bg-base-200;
+}
+
+.daisy-demo .milkdown-slash-menu .menu-groups {
+  @apply overflow-y-auto p-2;
+}
+
+.daisy-demo .milkdown-slash-menu h6 {
+  @apply text-base-content/50 mx-1 mt-2 mb-1 text-[0.7rem] tracking-wide uppercase;
+}
+
+.daisy-demo .milkdown-slash-menu .menu-group ul {
+  @apply menu p-0;
+}
+
+.daisy-demo .milkdown-slash-menu li[data-index] {
+  @apply flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm;
+}
+
+.daisy-demo .milkdown-slash-menu li[data-index].hover {
+  @apply bg-base-200;
 }
 
 .daisy-demo [data-milkdown-ember-mention-popover] {

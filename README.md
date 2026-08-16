@@ -7,7 +7,7 @@ unlike editors built on an HTML-shaped document model where markdown is a lossy 
 - `@mention` — headless, trigger-driven suggestion popover, your search callback
 - Diff review — inline (Milkdown's own decoration-based review) or side-by-side
 - Swappable toolbar — Crepe's floating selection toolbar or a fixed top bar
-- Headless — the addon ships no CSS; see [Styling](#styling)
+- Headless — no visual theme; see [Styling](#styling) for the one structural CSS file it does ship
 - GTS / TypeScript types published
 
 ## Install
@@ -116,38 +116,31 @@ position space to hang finer-grained decorations on.
 
 ## Styling
 
-The addon ships **no CSS**. That's a deliberate choice, not an oversight, and it comes
-with one gotcha worth knowing before you adopt it: **Crepe mounts several of its own
-floating widgets unconditionally** — the selection toolbar, link preview/edit tooltips,
-the block-edit slash menu, the drag handle — and without *some* baseline CSS, they render
-as permanent, unstyled blocks pushing your page apart, not just plain-looking. This isn't
-specific to any one of the three examples below; every consumer needs it. All of them
-(plus this addon's own mention popover) go through one of Milkdown's Provider classes and
-share one convention — hidden unless `data-show="true"`, positioned absolutely — so one
-rule covers all of them:
+The addon ships **no visual theme** — no colors, no fonts, no layout opinions. It does
+ship one small **structural** CSS file, `milkdown-ember/styles/chrome.css`, and importing
+it is effectively required, not optional:
 
 ```css
-.milkdown-toolbar,
-.milkdown-link-preview,
-.milkdown-link-edit,
-.milkdown-slash-menu,
-[data-milkdown-ember-mention-popover] {
-  position: absolute;
-  display: none;
-}
-
-.milkdown-toolbar[data-show="true"],
-.milkdown-link-preview[data-show="true"],
-.milkdown-link-edit[data-show="true"],
-.milkdown-slash-menu[data-show="true"],
-[data-milkdown-ember-mention-popover][data-show="true"] {
-  display: block;
-}
-
-.milkdown-block-handle {
-  position: absolute; /* no data-show gate — always floats near the active block */
-}
+@import 'milkdown-ember/styles/chrome.css';
 ```
+
+Here's the gotcha it exists to solve. **Crepe mounts several of its own floating widgets
+unconditionally** — the selection toolbar, the block-edit drag handle and slash menu,
+link preview/edit tooltips, the inline math editor — and without *some* baseline CSS they
+don't just look unstyled, they render as permanent, stacked, overlapping blocks that push
+your page apart and can even swallow clicks meant for a different widget sitting at the
+same position. This isn't specific to any one of the three examples below, every consumer
+hits it. All seven of them (plus this addon's own mention popover) go through one of
+Milkdown's Provider classes and share one convention — hidden unless `data-show="true"`,
+positioned absolutely — which is exactly what `chrome.css` provides. `.milkdown-top-bar`
+is the one Crepe widget that convention doesn't cover: it manages its own visibility via
+an inline style instead, so there's nothing for `chrome.css` to do for it.
+
+If you write your own rule targeting `.milkdown-toolbar` or `.milkdown-block-handle`,
+don't redeclare `display` on it unless you also condition it on `[data-show="true"]` — a
+more specific selector than `chrome.css`'s own will otherwise win on specificity and
+silently make the widget permanently visible again, regardless of the actual
+`data-show` value. (This shipped in this addon's own demo app once already.)
 
 From there, style the hooks the addon and Crepe expose:
 
@@ -157,6 +150,8 @@ From there, style the hooks the addon and Crepe expose:
 | `[data-toolbar="floating"\|"static"]` | On the same root, reflects the current `@toolbar` |
 | `.milkdown-toolbar` / `.milkdown-top-bar` | Crepe's own chrome |
 | `.toolbar-item` / `.toolbar-item.active` | Individual toolbar buttons |
+| `.milkdown-block-handle` | The drag handle; each icon is an `.operation-item`, `.active` is the pressed state |
+| `.milkdown-slash-menu` | The "+" block-insert menu — `.tab-group li.selected`, `li[data-index].hover` |
 | `[data-milkdown-ember-mention-popover]` | The mention suggestion popover |
 | `[data-mention-candidate]` / `[data-active]` | Candidate rows / the keyboard-highlighted one |
 | `.milkdown-diff-added` / `.milkdown-diff-removed` | Inline diff decorations |

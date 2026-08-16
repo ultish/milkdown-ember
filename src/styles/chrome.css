@@ -1,0 +1,76 @@
+/*
+ * Structural CSS for Crepe's own floating widgets: positioning and
+ * show/hide only, no colors, no fonts, no visual theme. milkdown-ember
+ * is headless, this file is the one exception, the same way
+ * floating-ember ships floating.css for its @modal backdrop: without
+ * *some* baseline here, Crepe's floating widgets aren't just unstyled,
+ * they're broken. They mount into the DOM unconditionally and default to
+ * `display: block`, so without this they render as permanent, stacked,
+ * overlapping blocks — which also breaks their own click handling (a
+ * click can land on whichever unrelated widget happens to be stacked on
+ * top at that position, not the one you can see).
+ *
+ * This list is exhaustive, not illustrative: it's every `new
+ * TooltipProvider(...)` / `SlashProvider(...)` / `BlockProvider(...)`
+ * call in Crepe's and Milkdown's components source (grepped across both
+ * packages, not just the ones a bug report happened to surface — an
+ * earlier version of this file only listed 5 of these 7 and left
+ * `.milkdown-latex-inline-edit` rendering permanently, found by using
+ * the editor normally rather than by re-auditing the source). All seven
+ * share the same data-show="true"/"false" convention. `.milkdown-top-bar`
+ * is the one Crepe widget that ISN'T here: it controls its own visibility
+ * directly via an inline style keyed to the editor's editable state, not
+ * this gate, so it's deliberately absent — that's not an oversight.
+ *
+ * Import this once, globally:
+ *   @import 'milkdown-ember/styles/chrome.css';
+ *
+ * Then layer your own visual styling for `.milkdown-toolbar`,
+ * `.milkdown-top-bar`, `.milkdown-block-handle` (its icons are each
+ * wrapped in `.operation-item`, with `.operation-item.active` for the
+ * pressed state), `.toolbar-item`,
+ * `[data-milkdown-ember-mention-popover]`, `[data-mention-candidate]`,
+ * `.milkdown-diff-added`/`.milkdown-diff-removed`, and
+ * `.milkdown-diff-accept`/`.milkdown-diff-reject` on top — see this
+ * addon's README and demo-app/styles.css for worked examples.
+ *
+ * If you write your own rule targeting any selector listed below, don't
+ * redeclare `display` on it (even to the same value) unless you also
+ * condition it on `[data-show="true"]`: a more specific selector (e.g.
+ * scoped under your own wrapper class) will otherwise win over this
+ * file's hide rule regardless of the actual data-show value, silently
+ * making the widget permanently visible again — this is the exact bug
+ * that shipped in this addon's own demo app before it was caught.
+ */
+
+.milkdown-toolbar,
+.milkdown-block-handle {
+  position: absolute;
+  z-index: 10;
+  display: none;
+}
+
+.milkdown-toolbar[data-show="true"],
+.milkdown-block-handle[data-show="true"] {
+  display: flex;
+}
+
+.milkdown-link-preview,
+.milkdown-link-edit,
+.milkdown-slash-menu,
+.milkdown-latex-inline-edit,
+.milkdown-ai-instruction,
+[data-milkdown-ember-mention-popover] {
+  position: absolute;
+  z-index: 10;
+  display: none;
+}
+
+.milkdown-link-preview[data-show="true"],
+.milkdown-link-edit[data-show="true"],
+.milkdown-slash-menu[data-show="true"],
+.milkdown-latex-inline-edit[data-show="true"],
+.milkdown-ai-instruction[data-show="true"],
+[data-milkdown-ember-mention-popover][data-show="true"] {
+  display: block;
+}

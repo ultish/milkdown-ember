@@ -36,6 +36,7 @@
       "default": "./dist/index.js"
     },
     "./addon-main.js": "./addon-main.cjs",
+    "./styles/chrome.css": "./dist/styles/chrome.css",
     "./*.css": "./dist/*.css",
     "./*": {
       "types": "./declarations/*.d.ts",
@@ -123,6 +124,7 @@
     "qunit": "^2.24.1",
     "qunit-dom": "^3.4.0",
     "rollup": "^4.22.5",
+    "rollup-plugin-copy": "^3.5.0",
     "tailwindcss": "^4.3.3",
     "testem": "^3.15.1",
     "typescript": "~5.8.3",
