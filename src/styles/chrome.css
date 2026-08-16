@@ -5,8 +5,8 @@
  * milkdown-ember is headless, this file is the one exception, the same way
  * floating-ember ships floating.css for its @modal backdrop: without
  * *some* baseline here, several Crepe features aren't just unstyled,
- * they're broken. This file covers six unrelated categories that all need
- * this treatment — read each section's own comment before editing it.
+ * they're broken. This file covers seven unrelated categories that all
+ * need this treatment — read each section's own comment before editing it.
  *
  * Import this once, globally:
  *   @import 'milkdown-ember/styles/chrome.css';
@@ -461,4 +461,64 @@ img.ProseMirror-separator {
 .milkdown-image-block .hidden,
 .milkdown-code-block .hidden {
   display: none !important;
+}
+
+/*
+ * Category 5: the Code Block feature's own chrome (on by default).
+ * CodeMirror itself needs no CSS import — unlike everything above, it's
+ * CSS-in-JS, injecting its own `<style>` tag at runtime, which is why
+ * syntax highlighting already works with none of this file's help. What
+ * doesn't is the language picker Crepe wraps around it: `.tools` (the
+ * row holding the language button and the copy button) had no `display:
+ * flex`, so the two stacked on separate lines instead of sitting in a
+ * row; `.language-picker` (the dropdown) had no `position: absolute`,
+ * so opening it pushed the code down and to the right instead of
+ * floating over it; `.language-list` (the dropdown's own item list) had
+ * no height cap or `overflow-y: auto`, so with enough languages
+ * registered it would just render as tall as its full content instead
+ * of scrolling, the identical bug already documented for the "+" menu's
+ * `.menu-groups` above, in a different feature's copy of the same
+ * pattern.
+ */
+
+.milkdown-code-block .tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.milkdown-code-block .tools-button-group {
+  display: flex;
+}
+
+.milkdown-code-block .language-button {
+  display: flex;
+  align-items: center;
+}
+
+.milkdown-code-block .language-button .expand-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.milkdown-code-block .language-picker {
+  position: absolute;
+  z-index: 999;
+  width: max-content;
+}
+
+.milkdown-code-block .language-list {
+  max-height: 20rem;
+  overflow-y: auto;
+}
+
+.milkdown-code-block .search-box {
+  display: flex;
+  align-items: center;
+}
+
+.milkdown-code-block .language-list-item {
+  display: flex;
+  align-items: center;
 }
