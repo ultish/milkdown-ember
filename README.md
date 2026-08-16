@@ -346,12 +346,12 @@ the addon and Crepe expose directly:
 
 The demo app (`pnpm start`, or the deployed GitHub Pages build) shows both paths side by
 side, using the exact same `<MilkdownEditor>` usage each time, with a live `@mention`
-search, a toolbar toggle, and both diff modes wired up. Its Plain CSS section imports
+search, a toolbar toggle, and both diff modes wired up. Its main demo page imports
 `theme.css` and adds nothing else, so it's the proof the shipped theme works out of the
-box. Its Tailwind and DaisyUI sections deliberately don't import it — they restate the
-same visual rules in their own framework-native syntax over the hooks in the table above,
-which is what the from-scratch path looks like. `demo-app/styles.css` is the reference
-implementation of both.
+box. Its Cookbook page's Tailwind and DaisyUI sections deliberately don't rely on it —
+they restate the same visual rules in their own framework-native syntax over the hooks
+in the table above, which is what the from-scratch path looks like.
+`demo-app/styles.css` is the reference implementation of both.
 
 ## Compatibility
 

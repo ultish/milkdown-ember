@@ -46,10 +46,11 @@ html {
  * src/styles/theme.css is optional: a minimal default visual theme in which
  * every color, radius and shadow is a `var(--milkdown-ember-*, fallback)`, so
  * a consumer re-themes it by setting a custom property rather than
- * out-specifying its rules. The Plain CSS section below imports theme.css and
- * adds nothing else, proving the addon looks right out of the box. The
- * Tailwind and DaisyUI sections deliberately skip it and restate the same
- * visual rules in their own framework-native syntax, over the same
+ * out-specifying its rules. theme.css is imported below globally, so the main
+ * demo page gets it with no section wrapper and no CSS of its own, proving the
+ * addon looks right out of the box. The cookbook's Tailwind and DaisyUI
+ * sections deliberately out-specify it and restate the same visual rules in
+ * their own framework-native syntax, over the same
  * [data-milkdown-ember-editor] / [data-toolbar] / [data-mention-candidate] /
  * [data-diff-*] hooks the addon exposes plus chrome.css's own classes, to show
  * the markup works under any styling system. IMPORTANT: none of the rules
@@ -62,13 +63,14 @@ html {
  * none` regardless of data-show.
  */
 
-/* ---- Plain CSS section: consumes the addon's own shipped default theme as-is. ---- */
+/* ---- The addon's own shipped default theme, consumed as-is. ---- */
 
-/* Nothing else in this section on purpose. It is the demonstration that
+/* Nothing accompanies this import on purpose. It is the demonstration that
    theme.css on its own is enough for a working, decent-looking editor with no
-   CSS of your own. The Tailwind and DaisyUI sections below deliberately never
-   import it — they replace it wholesale with their own framework-native
-   styling, which is the from-scratch path. */
+   CSS of your own, which is what the main demo page shows. The cookbook's
+   Tailwind and DaisyUI sections below deliberately never rely on it — they
+   replace it wholesale with their own framework-native styling, which is the
+   from-scratch path. */
 @import "../src/styles/theme.css";
 
 /* ---- Tailwind section: utility classes only, no DaisyUI components. ---- */
