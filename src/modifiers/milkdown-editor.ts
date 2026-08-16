@@ -20,6 +20,7 @@ export interface MilkdownEditorModifierSignature {
       value?: string;
       onChange?: (markdown: string) => void;
       toolbar?: ToolbarMode;
+      blockHandle?: boolean;
       onMentionSearch?: MentionSearch;
       mentionTrigger?: string;
       compareValue?: string;
@@ -42,6 +43,7 @@ export default class MilkdownEditorModifier extends Modifier<MilkdownEditorModif
       value = '',
       onChange,
       toolbar = 'floating',
+      blockHandle = true,
       onMentionSearch,
       mentionTrigger,
       compareValue,
@@ -57,6 +59,7 @@ export default class MilkdownEditorModifier extends Modifier<MilkdownEditorModif
       this.#manager = new CrepeSyncManager(element, {
         value,
         toolbar,
+        blockHandle,
         onChange,
         mention,
         compareValue,
@@ -83,6 +86,7 @@ export default class MilkdownEditorModifier extends Modifier<MilkdownEditorModif
     this.#manager.update({
       value,
       toolbar,
+      blockHandle,
       onChange,
       mention,
       compareValue,

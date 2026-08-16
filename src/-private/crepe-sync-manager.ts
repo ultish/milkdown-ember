@@ -1,5 +1,5 @@
 import { waitForPromise } from '@ember/test-waiters';
-import { Crepe } from '@milkdown/crepe';
+import { Crepe, CrepeFeature } from '@milkdown/crepe';
 import { commandsCtx, editorViewCtx } from '@milkdown/kit/core';
 import {
   clearDiffReviewCmd,
@@ -20,6 +20,7 @@ import type { ToolbarMode } from './toolbar-mode.ts';
 export interface CrepeSyncManagerArgs {
   value: string;
   toolbar: ToolbarMode;
+  blockHandle: boolean;
   onChange?: (markdown: string) => void;
   mention?: MentionConfig;
   compareValue?: string;
@@ -30,6 +31,7 @@ export interface CrepeSyncManagerArgs {
 
 interface FeaturePresence {
   toolbar: ToolbarMode;
+  blockHandle: boolean;
   mention: boolean;
   diff: boolean;
 }
@@ -37,6 +39,7 @@ interface FeaturePresence {
 function presenceOf(args: CrepeSyncManagerArgs): FeaturePresence {
   return {
     toolbar: args.toolbar,
+    blockHandle: args.blockHandle,
     mention: args.mention !== undefined,
     diff: args.compareValue !== undefined,
   };
@@ -44,7 +47,10 @@ function presenceOf(args: CrepeSyncManagerArgs): FeaturePresence {
 
 function presenceEqual(a: FeaturePresence, b: FeaturePresence): boolean {
   return (
-    a.toolbar === b.toolbar && a.mention === b.mention && a.diff === b.diff
+    a.toolbar === b.toolbar &&
+    a.blockHandle === b.blockHandle &&
+    a.mention === b.mention &&
+    a.diff === b.diff
   );
 }
 
@@ -191,9 +197,29 @@ export class CrepeSyncManager {
     const crepe = new Crepe({
       root: this.#root,
       defaultValue: args.value,
-      features: featuresForToolbarMode(args.toolbar),
-      featureConfigs:
-        args.compareValue !== undefined ? diffFeatureConfigs() : undefined,
+      features: {
+        ...featuresForToolbarMode(args.toolbar),
+        [CrepeFeature.BlockEdit]: args.blockHandle,
+      },
+      featureConfigs: {
+        // `'block'` (Crepe's default) shows "Please enter..." on every
+        // empty paragraph you land the cursor in, Notion-style. This addon
+        // wraps a single markdown value, closer to a textarea than a
+        // multi-section doc, so `'doc'` matches that: the placeholder only
+        // shows while the whole document is empty, not on every blank line
+        // you create while editing non-empty content.
+        [CrepeFeature.Placeholder]: { mode: 'doc' },
+        // Crepe's own default offset (16px) assumes its own theme's
+        // generous padding (120px, from a reset.css this headless addon
+        // doesn't import). At the kind of modest padding a typical
+        // consumer actually uses (1rem or so), 16px isn't enough room for
+        // the handle itself (~3.6rem wide) to clear the editor's edge —
+        // it ends up flush against, or past, the border. Doubling it
+        // gives the handle a lane in the page's own margin instead of
+        // requiring the editor to carve out padding it doesn't need.
+        [CrepeFeature.BlockEdit]: { blockHandle: { getOffset: () => 32 } },
+        ...(args.compareValue !== undefined ? diffFeatureConfigs() : {}),
+      },
     });
 
     if (args.mention) registerMentionFeature(crepe.editor, args.mention);

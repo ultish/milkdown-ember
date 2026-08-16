@@ -13,6 +13,7 @@ export interface MilkdownEditorSignature {
     value?: string;
     onChange?: (markdown: string) => void;
     toolbar?: ToolbarMode;
+    blockHandle?: boolean;
     onMentionSearch?: MentionSearch;
     mentionTrigger?: string;
     compareValue?: string;
@@ -46,6 +47,7 @@ export default class MilkdownEditor extends Component<MilkdownEditorSignature> {
           value=@value
           onChange=@onChange
           toolbar=@toolbar
+          blockHandle=@blockHandle
           onMentionSearch=@onMentionSearch
           mentionTrigger=@mentionTrigger
           compareValue=@compareValue
