@@ -10,3 +10,4 @@ export type {
   MentionConfig,
   MentionSearch,
 } from './-private/mention/types.ts';
+export type { DiffMode } from './-private/diff/types.ts';

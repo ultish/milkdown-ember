@@ -1,12 +1,19 @@
 import { waitForPromise } from '@ember/test-waiters';
 import { Crepe } from '@milkdown/crepe';
-import { editorViewCtx } from '@milkdown/kit/core';
+import { commandsCtx, editorViewCtx } from '@milkdown/kit/core';
+import {
+  clearDiffReviewCmd,
+  startDiffReviewCmd,
+} from '@milkdown/kit/plugin/diff';
 import { replaceAll } from '@milkdown/kit/utils';
 
+import { registerDiffFeature } from './diff/feature.ts';
+import { diffFeatureConfigs } from './diff/toolbar-button.ts';
 import { registerMentionFeature } from './mention/feature.ts';
 import { mentionConfigCtx } from './mention/popover-plugin.ts';
 import { featuresForToolbarMode } from './toolbar-mode.ts';
 
+import type { DiffMode } from './diff/types.ts';
 import type { MentionConfig } from './mention/types.ts';
 import type { ToolbarMode } from './toolbar-mode.ts';
 
@@ -15,6 +22,30 @@ export interface CrepeSyncManagerArgs {
   toolbar: ToolbarMode;
   onChange?: (markdown: string) => void;
   mention?: MentionConfig;
+  compareValue?: string;
+  diffMode: DiffMode;
+  showDiff: boolean;
+  onShowDiffChange?: (show: boolean) => void;
+}
+
+interface FeaturePresence {
+  toolbar: ToolbarMode;
+  mention: boolean;
+  diff: boolean;
+}
+
+function presenceOf(args: CrepeSyncManagerArgs): FeaturePresence {
+  return {
+    toolbar: args.toolbar,
+    mention: args.mention !== undefined,
+    diff: args.compareValue !== undefined,
+  };
+}
+
+function presenceEqual(a: FeaturePresence, b: FeaturePresence): boolean {
+  return (
+    a.toolbar === b.toolbar && a.mention === b.mention && a.diff === b.diff
+  );
 }
 
 /// Owns a Crepe instance's lifecycle and keeps it in sync with `value` /
@@ -25,19 +56,21 @@ export interface CrepeSyncManagerArgs {
 export class CrepeSyncManager {
   #crepe: Crepe | undefined;
   #lastKnownMarkdown: string;
-  #toolbar: ToolbarMode;
   #onChange: ((markdown: string) => void) | undefined;
-  #mentionEnabled: boolean;
+  #onShowDiffChange: ((show: boolean) => void) | undefined;
+  #presence: FeaturePresence;
+  #appliedShowDiff = false;
+  #appliedCompareValue: string | undefined;
   #root: Element;
   #ready: Promise<void>;
 
   constructor(root: Element, args: CrepeSyncManagerArgs) {
     this.#root = root;
     this.#lastKnownMarkdown = args.value;
-    this.#toolbar = args.toolbar;
     this.#onChange = args.onChange;
-    this.#mentionEnabled = args.mention !== undefined;
-    this.#ready = this.#create(args.value, args.mention);
+    this.#onShowDiffChange = args.onShowDiffChange;
+    this.#presence = presenceOf(args);
+    this.#ready = this.#create(args);
   }
 
   /// Resolves once the underlying Crepe instance has finished `create()`.
@@ -56,15 +89,12 @@ export class CrepeSyncManager {
 
   update(args: CrepeSyncManagerArgs): void {
     this.#onChange = args.onChange;
+    this.#onShowDiffChange = args.onShowDiffChange;
 
-    const mentionEnabled = args.mention !== undefined;
-    if (
-      args.toolbar !== this.#toolbar ||
-      mentionEnabled !== this.#mentionEnabled
-    ) {
-      this.#toolbar = args.toolbar;
-      this.#mentionEnabled = mentionEnabled;
-      this.#ready = this.#recreate(args.mention);
+    const presence = presenceOf(args);
+    if (!presenceEqual(presence, this.#presence)) {
+      this.#presence = presence;
+      this.#ready = this.#recreate(args);
       return;
     }
 
@@ -73,6 +103,10 @@ export class CrepeSyncManager {
     // update in place here with no recreate needed, unlike a presence
     // change above.
     if (args.mention) this.#applyMentionConfig(args.mention);
+
+    if (presence.diff && args.diffMode === 'inline') {
+      this.#applyDiffState(args.showDiff, args.compareValue);
+    }
 
     if (args.value !== this.#lastKnownMarkdown) {
       this.#applyExternalValue(args.value);
@@ -116,6 +150,13 @@ export class CrepeSyncManager {
     // setting this now (rather than inside the listener callback) means
     // any update() call that arrives before the debounce fires already
     // sees a matching value and skips re-applying.
+    //
+    // Note: while an inline diff review is active, Milkdown's own diff
+    // plugin filters out non-diff-tagged doc-changing transactions
+    // (including this replaceAll), so an external @value push is a no-op
+    // for as long as @showDiff stays true. That's intentional upstream
+    // behavior, not a bug in this wrapper: content shouldn't shift under
+    // an active review.
     this.#lastKnownMarkdown = value;
     crepe.editor.action(replaceAll(value));
   }
@@ -126,17 +167,41 @@ export class CrepeSyncManager {
     });
   }
 
-  async #create(
-    value: string,
-    mention: MentionConfig | undefined,
-  ): Promise<void> {
+  #applyDiffState(showDiff: boolean, compareValue: string | undefined): void {
+    if (
+      showDiff === this.#appliedShowDiff &&
+      compareValue === this.#appliedCompareValue
+    ) {
+      return;
+    }
+    this.#appliedShowDiff = showDiff;
+    this.#appliedCompareValue = compareValue;
+
+    this.#crepe?.editor.action((ctx) => {
+      const commands = ctx.get(commandsCtx);
+      if (showDiff && compareValue !== undefined) {
+        commands.call(startDiffReviewCmd.key, compareValue);
+      } else {
+        commands.call(clearDiffReviewCmd.key);
+      }
+    });
+  }
+
+  async #create(args: CrepeSyncManagerArgs): Promise<void> {
     const crepe = new Crepe({
       root: this.#root,
-      defaultValue: value,
-      features: featuresForToolbarMode(this.#toolbar),
+      defaultValue: args.value,
+      features: featuresForToolbarMode(args.toolbar),
+      featureConfigs:
+        args.compareValue !== undefined ? diffFeatureConfigs() : undefined,
     });
 
-    if (mention) registerMentionFeature(crepe.editor, mention);
+    if (args.mention) registerMentionFeature(crepe.editor, args.mention);
+    if (args.compareValue !== undefined) {
+      registerDiffFeature(crepe.editor, {
+        onToggle: () => this.#onShowDiffChange?.(!this.#appliedShowDiff),
+      });
+    }
 
     // Must be registered before create(): Crepe's `on()` only queues onto
     // the editor config prior to creation, and switches to a live ctx
@@ -150,18 +215,29 @@ export class CrepeSyncManager {
 
     await waitForPromise(crepe.create(), 'milkdown-ember:crepe-create');
     this.#crepe = crepe;
+    this.#appliedShowDiff = false;
+    this.#appliedCompareValue = undefined;
+
+    if (
+      args.compareValue !== undefined &&
+      args.diffMode === 'inline' &&
+      args.showDiff
+    ) {
+      this.#applyDiffState(true, args.compareValue);
+    }
   }
 
-  async #recreate(mention: MentionConfig | undefined): Promise<void> {
+  async #recreate(args: CrepeSyncManagerArgs): Promise<void> {
     await this.#ready.catch(() => undefined);
 
-    // Live truth over the incoming arg: a toolbar/mention-only change may
-    // arrive with a `value` that's stale relative to what the user just typed.
+    // Live truth over the incoming arg: a toolbar/mention/diff-presence
+    // change may arrive with a `value` that's stale relative to what the
+    // user just typed.
     const value = this.getMarkdown();
     await this.#crepe?.destroy();
     this.#crepe = undefined;
     this.#lastKnownMarkdown = value;
 
-    await this.#create(value, mention);
+    await this.#create({ ...args, value });
   }
 }

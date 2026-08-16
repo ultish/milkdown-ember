@@ -8,6 +8,7 @@ import {
   unregisterEditor,
 } from '../-private/editor-registry.ts';
 
+import type { DiffMode } from '../-private/diff/types.ts';
 import type { MentionSearch } from '../-private/mention/types.ts';
 import type { ToolbarMode } from '../-private/toolbar-mode.ts';
 import type { NamedArgs } from 'ember-modifier';
@@ -21,6 +22,10 @@ export interface MilkdownEditorModifierSignature {
       toolbar?: ToolbarMode;
       onMentionSearch?: MentionSearch;
       mentionTrigger?: string;
+      compareValue?: string;
+      diffMode?: DiffMode;
+      showDiff?: boolean;
+      onShowDiffChange?: (show: boolean) => void;
     };
   };
 }
@@ -39,6 +44,10 @@ export default class MilkdownEditorModifier extends Modifier<MilkdownEditorModif
       toolbar = 'floating',
       onMentionSearch,
       mentionTrigger,
+      compareValue,
+      diffMode = 'inline',
+      showDiff = false,
+      onShowDiffChange,
     } = named;
     const mention = onMentionSearch
       ? { onSearch: onMentionSearch, trigger: mentionTrigger }
@@ -50,6 +59,10 @@ export default class MilkdownEditorModifier extends Modifier<MilkdownEditorModif
         toolbar,
         onChange,
         mention,
+        compareValue,
+        diffMode,
+        showDiff,
+        onShowDiffChange,
       });
       registerEditor(element, this.#manager);
       registerDestructor(this, () => {
@@ -67,6 +80,15 @@ export default class MilkdownEditorModifier extends Modifier<MilkdownEditorModif
       return;
     }
 
-    this.#manager.update({ value, toolbar, onChange, mention });
+    this.#manager.update({
+      value,
+      toolbar,
+      onChange,
+      mention,
+      compareValue,
+      diffMode,
+      showDiff,
+      onShowDiffChange,
+    });
   }
 }
