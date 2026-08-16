@@ -1,6 +1,319 @@
 /**
-* See: https://vite.dev/guide/features.html#css
-*      for features beyond normal CSS that are available to you.
-*
-* This CSS is meant for the demo-app only, and will not be included in the published assets for this library.
-*/
+ * See: https://vite.dev/guide/features.html#css
+ *      for features beyond normal CSS that are available to you.
+ *
+ * This CSS is meant for the demo-app only, and will not be included in the published assets for this library.
+ */
+
+@import "tailwindcss";
+
+@plugin 'daisyui' {
+  themes:
+    light --default,
+    dark;
+}
+
+@source "./**/*.{gts,gjs,ts,js}";
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Shared page chrome, not part of the plain/Tailwind/DaisyUI comparison. */
+.demo-controls {
+  @apply mb-2 flex flex-wrap gap-2;
+}
+
+.demo-controls button {
+  @apply cursor-pointer rounded border border-slate-300 bg-white px-2 py-1 text-xs hover:bg-slate-50;
+}
+
+.demo-output {
+  @apply mt-3 max-h-40 overflow-auto rounded border border-slate-200 bg-slate-50 p-3 text-xs whitespace-pre-wrap;
+}
+
+/*
+ * Baseline positioning for every floating widget Crepe mounts, not a
+ * styling choice, a functional necessity for ANY consumer: milkdown-ember
+ * ships zero CSS (headless by design), and none of these are hidden or
+ * floated without it. All six go through one of Milkdown's own Provider
+ * classes (TooltipProvider, SlashProvider, BlockProvider), which every
+ * one of them uses the same data-show="true"/"false" convention for, so
+ * one rule covers all of them: the selection toolbar, the fixed top bar's
+ * heading dropdown, the mention popover this addon builds, the link
+ * preview/edit tooltips, and BlockEdit's slash menu. The drag handle
+ * (.milkdown-block-handle) is positioned the same way but has no
+ * data-show gate, it's just always floating next to the active block.
+ */
+.milkdown-toolbar,
+.milkdown-link-preview,
+.milkdown-link-edit,
+.milkdown-slash-menu,
+[data-milkdown-ember-mention-popover] {
+  @apply absolute z-10;
+  display: none;
+}
+
+.milkdown-toolbar[data-show="true"],
+.milkdown-link-preview[data-show="true"],
+.milkdown-link-edit[data-show="true"],
+.milkdown-slash-menu[data-show="true"],
+[data-milkdown-ember-mention-popover][data-show="true"] {
+  display: block;
+}
+
+.milkdown-block-handle {
+  @apply absolute z-10 flex gap-0.5;
+}
+
+/*
+ * milkdown-ember ships no visual theme (headless). Every section below
+ * styles the same [data-milkdown-ember-editor] / [data-toolbar] /
+ * [data-mention-candidate] / [data-milkdown-diff-popover] / [data-diff-*]
+ * hooks the addon exposes, just through a different styling system, to
+ * show the same markup works with any of them.
+ */
+
+/* ---- Plain CSS section: no framework, hand-written rules. ---- */
+
+.plain-demo [data-milkdown-ember-editor] {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  min-height: 10rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #1c1915;
+}
+
+.plain-demo [data-milkdown-ember-editor]:focus-within {
+  border-color: #888;
+}
+
+.plain-demo .milkdown-toolbar,
+.plain-demo .milkdown-top-bar {
+  display: flex;
+  gap: 0.25rem;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 0.25rem;
+}
+
+.plain-demo .milkdown-top-bar {
+  margin-bottom: 0.5rem;
+}
+
+.plain-demo .toolbar-item {
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  padding: 0.3rem;
+  cursor: pointer;
+}
+
+.plain-demo .toolbar-item.active,
+.plain-demo .toolbar-item:hover {
+  background: #f0eee9;
+}
+
+.plain-demo [data-milkdown-ember-mention-popover] {
+  background: #1c1915;
+  color: #f4efe4;
+  border-radius: 6px;
+  padding: 0.25rem;
+  display: none;
+}
+
+.plain-demo [data-milkdown-ember-mention-popover][data-show="true"] {
+  display: block;
+}
+
+.plain-demo [data-mention-candidate] {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.plain-demo [data-mention-candidate][data-active] {
+  background: rgb(255 255 255 / 15%);
+}
+
+.plain-demo .milkdown-diff-added {
+  background: #e6ffed;
+  color: #1c1915;
+}
+
+.plain-demo .milkdown-diff-removed {
+  background: #ffeef0;
+  color: #1c1915;
+  text-decoration: line-through;
+}
+
+.plain-demo .milkdown-diff-controls {
+  display: inline-flex;
+  gap: 0.25rem;
+  margin: 0 0.35rem;
+}
+
+.plain-demo .milkdown-diff-accept,
+.plain-demo .milkdown-diff-reject {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.plain-demo [data-milkdown-ember-diff-side-by-side] {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.plain-demo [data-diff-pane] {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+
+.plain-demo [data-diff-block][data-diff-status="changed"] {
+  background: #fff8e1;
+}
+
+/* ---- Tailwind section: utility classes only, no DaisyUI components. ---- */
+
+.tailwind-demo [data-milkdown-ember-editor] {
+  @apply rounded-lg border border-slate-300 p-4 min-h-40 focus-within:border-slate-500;
+}
+
+.tailwind-demo .milkdown-toolbar,
+.tailwind-demo .milkdown-top-bar {
+  @apply flex gap-1 rounded-md border border-slate-300 bg-white p-1;
+}
+
+.tailwind-demo .milkdown-top-bar {
+  @apply mb-2;
+}
+
+.tailwind-demo .toolbar-item {
+  @apply rounded p-1.5 hover:bg-slate-100;
+}
+
+.tailwind-demo .toolbar-item.active {
+  @apply bg-slate-200;
+}
+
+.tailwind-demo [data-milkdown-ember-mention-popover] {
+  @apply hidden rounded-md bg-slate-900 p-1 text-white;
+}
+
+.tailwind-demo [data-milkdown-ember-mention-popover][data-show="true"] {
+  @apply block;
+}
+
+.tailwind-demo [data-mention-candidate] {
+  @apply cursor-pointer list-none rounded px-2 py-1;
+}
+
+.tailwind-demo [data-mention-candidate][data-active] {
+  @apply bg-white/15;
+}
+
+.tailwind-demo .milkdown-diff-added {
+  @apply bg-emerald-100;
+}
+
+.tailwind-demo .milkdown-diff-removed {
+  @apply bg-rose-100 line-through;
+}
+
+.tailwind-demo .milkdown-diff-controls {
+  @apply mx-1 inline-flex gap-1;
+}
+
+.tailwind-demo .milkdown-diff-accept,
+.tailwind-demo .milkdown-diff-reject {
+  @apply cursor-pointer rounded border border-slate-300 bg-white px-1.5 py-0.5 text-xs;
+}
+
+.tailwind-demo [data-milkdown-ember-diff-side-by-side] {
+  @apply grid grid-cols-2 gap-4;
+}
+
+.tailwind-demo [data-diff-pane] {
+  @apply rounded-lg border border-slate-300 p-4;
+}
+
+.tailwind-demo [data-diff-block][data-diff-status="changed"] {
+  @apply bg-amber-100;
+}
+
+/* ---- DaisyUI section: component classes on top of Tailwind. ---- */
+
+.daisy-demo [data-milkdown-ember-editor] {
+  @apply card card-border bg-base-100 p-4 min-h-40;
+}
+
+.daisy-demo .milkdown-toolbar,
+.daisy-demo .milkdown-top-bar {
+  @apply join border border-base-300 rounded-box p-1;
+}
+
+.daisy-demo .milkdown-top-bar {
+  @apply mb-2;
+}
+
+.daisy-demo .toolbar-item {
+  @apply btn btn-ghost btn-xs join-item;
+}
+
+.daisy-demo .toolbar-item.active {
+  @apply btn-active;
+}
+
+.daisy-demo [data-milkdown-ember-mention-popover] {
+  @apply menu hidden bg-base-200 rounded-box shadow;
+}
+
+.daisy-demo [data-milkdown-ember-mention-popover][data-show="true"] {
+  @apply block;
+}
+
+.daisy-demo [data-mention-candidate] {
+  @apply cursor-pointer list-none rounded px-3 py-1;
+}
+
+.daisy-demo [data-mention-candidate][data-active] {
+  @apply bg-primary text-primary-content;
+}
+
+.daisy-demo .milkdown-diff-added {
+  @apply bg-success/20;
+}
+
+.daisy-demo .milkdown-diff-removed {
+  @apply bg-error/20 line-through;
+}
+
+.daisy-demo .milkdown-diff-controls {
+  @apply join mx-1;
+}
+
+.daisy-demo .milkdown-diff-accept,
+.daisy-demo .milkdown-diff-reject {
+  @apply btn btn-xs join-item;
+}
+
+.daisy-demo [data-milkdown-ember-diff-side-by-side] {
+  @apply grid grid-cols-2 gap-4;
+}
+
+.daisy-demo [data-diff-pane] {
+  @apply card card-border bg-base-100 p-4;
+}
+
+.daisy-demo [data-diff-block][data-diff-status="changed"] {
+  @apply bg-warning/20;
+}
