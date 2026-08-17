@@ -307,6 +307,54 @@ behavior, cursors — is layout rather than theme, and isn't parameterized.
 | `--milkdown-ember-image-operation-text` | `#f4efe4` | Those icons' color |
 | `--milkdown-ember-font-family` | `-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif` | The editor's font stack |
 
+#### Reskinning with a design system
+
+If you already use Tailwind or DaisyUI, you don't need to restyle the editor in their
+syntax. `theme.css`'s selectors are unscoped, so its rules already apply wherever the
+editor renders, and every value they paint routes through one of the properties above.
+Matching your design system is therefore a matter of pointing those properties at its
+own tokens on a wrapper element. No new rules, no specificity fights.
+
+DaisyUI v5 publishes its active theme as real custom properties on `[data-theme]`, not
+just as utility classes, so they can be referenced directly:
+
+```css
+.my-editor-wrapper {
+  --milkdown-ember-border: var(--color-base-300);
+  --milkdown-ember-surface: var(--color-base-100);
+  --milkdown-ember-surface-hover: var(--color-base-200);
+  --milkdown-ember-text: var(--color-base-content);
+  --milkdown-ember-radius: var(--radius-box);
+  --milkdown-ember-radius-sm: var(--radius-field);
+  --milkdown-ember-mention-bg: var(--color-neutral);
+  --milkdown-ember-mention-text: var(--color-neutral-content);
+}
+```
+
+Because those are live properties rather than baked-in values, a DaisyUI theme switch
+re-resolves them and the editor follows along with no extra code. Tailwind's generated
+palette works the same way but has no runtime theme concept behind it, so the equivalent
+mapping is a one-time palette match:
+
+```css
+.my-editor-wrapper {
+  --milkdown-ember-border: var(--color-slate-300);
+  --milkdown-ember-surface: var(--color-white);
+  --milkdown-ember-text: var(--color-slate-900);
+  --milkdown-ember-radius: var(--radius-lg);
+  --milkdown-ember-radius-md: var(--radius-md);
+}
+```
+
+Neither mapping touches `--milkdown-ember-code-bg`, `-code-text`, or `-code-hover`. Those
+default to CodeMirror's own fixed theme colors, as the table above notes, and CodeMirror
+renders its syntax highlighting without any knowledge of which design-system theme is
+active — so re-theming them from a second source only risks a mismatch against the
+highlighted code sitting directly below.
+
+`demo-app/tailwind-theme.css` and `demo-app/daisy-theme.css` are the full working
+versions of both, covering every property either framework has a sensible token for.
+
 If you'd rather build your own look from scratch, skip `theme.css` and style the hooks
 the addon and Crepe expose directly:
 
@@ -348,10 +396,11 @@ The demo app (`pnpm start`, or the deployed GitHub Pages build) shows both paths
 side, using the exact same `<MilkdownEditor>` usage each time, with a live `@mention`
 search, a toolbar toggle, and both diff modes wired up. Its main demo page imports
 `theme.css` and adds nothing else, so it's the proof the shipped theme works out of the
-box. Its Cookbook page's Tailwind and DaisyUI sections deliberately don't rely on it —
-they restate the same visual rules in their own framework-native syntax over the hooks
-in the table above, which is what the from-scratch path looks like.
-`demo-app/styles.css` is the reference implementation of both.
+box. Its Cookbook page's Tailwind and DaisyUI sections run those very same `theme.css`
+rules, reskinned by redefining the `--milkdown-ember-*` properties within each section
+against that framework's own design tokens — the technique described above, not a
+from-scratch restyle. `demo-app/styles.css` wires all three areas together, and
+`demo-app/tailwind-theme.css` and `demo-app/daisy-theme.css` hold the two mappings.
 
 ## Compatibility
 

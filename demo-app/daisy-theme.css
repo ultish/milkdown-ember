@@ -1,0 +1,57 @@
+/* Reskins the addon's shipped theme.css with DaisyUI's own design tokens,
+   instead of restating its rules. theme.css's selectors are unscoped, so
+   they already apply here — this file only needs to redefine the custom
+   properties they read, mapped onto DaisyUI's own CSS variables (DaisyUI v5
+   exposes its active theme as real custom properties on `[data-theme]`, not
+   just utility classes, which is what makes this mapping possible at all).
+   `--milkdown-ember-code-bg`/`-code-text`/`-code-hover` are deliberately not
+   mapped: CodeMirror renders its own syntax highlighting independently and
+   has no idea what DaisyUI theme is active, so leaving these at their
+   shipped default (matched to CodeMirror's own fixed colors) is more
+   correct than inventing a second, uncoordinated light/dark toggle. */
+.daisy-demo {
+  --milkdown-ember-border: var(--color-base-300);
+  --milkdown-ember-border-focus: var(--color-primary);
+  --milkdown-ember-radius: var(--radius-box);
+  --milkdown-ember-radius-md: var(--radius-box);
+  --milkdown-ember-radius-sm: var(--radius-field);
+  --milkdown-ember-surface: var(--color-base-100);
+  --milkdown-ember-surface-hover: var(--color-base-200);
+  --milkdown-ember-text: var(--color-base-content);
+  --milkdown-ember-text-muted: color-mix(
+    in oklab,
+    var(--color-base-content) 70%,
+    transparent
+  );
+  --milkdown-ember-label-muted: color-mix(
+    in oklab,
+    var(--color-base-content) 50%,
+    transparent
+  );
+  --milkdown-ember-divider: var(--color-base-300);
+  --milkdown-ember-table-header-bg: var(--color-base-200);
+  --milkdown-ember-mention-bg: var(--color-neutral);
+  --milkdown-ember-mention-text: var(--color-neutral-content);
+  --milkdown-ember-mention-active: color-mix(
+    in oklab,
+    var(--color-neutral-content) 15%,
+    transparent
+  );
+  --milkdown-ember-diff-added-bg: color-mix(
+    in oklab,
+    var(--color-success) 15%,
+    var(--color-base-100)
+  );
+  --milkdown-ember-diff-removed-bg: color-mix(
+    in oklab,
+    var(--color-error) 15%,
+    var(--color-base-100)
+  );
+  --milkdown-ember-diff-changed-bg: color-mix(
+    in oklab,
+    var(--color-warning) 15%,
+    var(--color-base-100)
+  );
+  --milkdown-ember-image-operation-bg: var(--color-neutral);
+  --milkdown-ember-image-operation-text: var(--color-neutral-content);
+}

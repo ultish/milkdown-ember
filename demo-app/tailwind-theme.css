@@ -1,0 +1,25 @@
+/* Reskins the addon's shipped theme.css with Tailwind's own generated
+   palette tokens, instead of restating its rules — same idea as
+   daisy-theme.css, see that file's header comment for why this works.
+   Tailwind has no runtime "active theme" the way DaisyUI does (its
+   variables are static values from its build-time config, not swappable at
+   runtime), so this is a one-time palette match rather than something that
+   responds to a theme switch — still worth doing so a consumer who
+   customizes their own Tailwind palette gets a matching editor for free.
+   Properties not listed here (radius-sm, the mention/diff/image-operation
+   colors, the code-block colors, the shadow) are left at their shipped
+   defaults; Tailwind doesn't have a further semantic token to reach for on
+   top of the slate scale already mapped below. */
+.tailwind-demo {
+  --milkdown-ember-border: var(--color-slate-300);
+  --milkdown-ember-border-focus: var(--color-slate-500);
+  --milkdown-ember-radius: var(--radius-lg);
+  --milkdown-ember-radius-md: var(--radius-md);
+  --milkdown-ember-surface: var(--color-white);
+  --milkdown-ember-surface-hover: var(--color-slate-100);
+  --milkdown-ember-text: var(--color-slate-900);
+  --milkdown-ember-text-muted: var(--color-slate-600);
+  --milkdown-ember-label-muted: var(--color-slate-400);
+  --milkdown-ember-divider: var(--color-slate-200);
+  --milkdown-ember-table-header-bg: var(--color-slate-50);
+}

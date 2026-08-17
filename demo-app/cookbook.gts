@@ -151,17 +151,38 @@ const RECIPE_PLAIN = `@import 'milkdown-ember/styles/chrome.css';
 
 // See the main page — this is exactly what it does.`;
 
-const RECIPE_TAILWIND = `[data-milkdown-ember-editor] {
-  @apply flex min-h-40 flex-col rounded-lg border border-slate-300 p-4;
+const RECIPE_TAILWIND = `@import 'milkdown-ember/styles/chrome.css';
+@import 'milkdown-ember/styles/theme.css';
+
+/* Reskin the shipped theme with Tailwind's own tokens instead of writing
+   your own rules — theme.css's selectors already apply everywhere */
+.my-editor-wrapper {
+  --milkdown-ember-border: var(--color-slate-300);
+  --milkdown-ember-surface: var(--color-white);
+  --milkdown-ember-text: var(--color-slate-900);
+  /* ...see demo-app/tailwind-theme.css for the full mapping */
 }
 
-// Full reference: the .tailwind-demo rules in demo-app/styles.css`;
+<div class="my-editor-wrapper">
+  <MilkdownEditor @value={{this.value}} />
+</div>`;
 
-const RECIPE_DAISY = `[data-milkdown-ember-editor] {
-  @apply flex min-h-40 flex-col rounded-lg border border-base-300 bg-base-100 p-4;
+const RECIPE_DAISY = `@import 'milkdown-ember/styles/chrome.css';
+@import 'milkdown-ember/styles/theme.css';
+
+/* Reskin with DaisyUI's own theme tokens — these are real custom
+   properties on [data-theme], not just utility classes, so this follows
+   DaisyUI's active theme automatically */
+.my-editor-wrapper {
+  --milkdown-ember-border: var(--color-base-300);
+  --milkdown-ember-surface: var(--color-base-100);
+  --milkdown-ember-text: var(--color-base-content);
+  /* ...see demo-app/daisy-theme.css for the full mapping */
 }
 
-// Full reference: the .daisy-demo rules in demo-app/styles.css`;
+<div class="my-editor-wrapper">
+  <MilkdownEditor @value={{this.value}} />
+</div>`;
 
 <template>
   <div class="min-h-screen">
@@ -296,8 +317,9 @@ const RECIPE_DAISY = `[data-milkdown-ember-editor] {
             <code>var(--milkdown-ember-*, fallback)</code>
             custom properties, so re-theming means setting one property instead
             of out-specifying a rule. The main page imports theme.css directly
-            and adds nothing else. Below, the exact same editor restyled from
-            scratch two more ways, to show there's no framework lock-in.
+            and adds nothing else. Below, the exact same theme.css rules
+            reskinned two more ways, each by pointing those properties at a
+            design system's own tokens.
           </p>
         </div>
 
@@ -314,7 +336,7 @@ const RECIPE_DAISY = `[data-milkdown-ember-editor] {
         <CookbookSection
           @id="styling-tailwind"
           @title="Tailwind"
-          @blurb="Utility classes only, no component library. See .tailwind-demo in demo-app/styles.css."
+          @blurb="Reskins the shipped theme.css with Tailwind's own generated palette tokens, rather than writing new rules. See demo-app/tailwind-theme.css."
           @code={{RECIPE_TAILWIND}}
           class="tailwind-demo"
         >
@@ -324,7 +346,7 @@ const RECIPE_DAISY = `[data-milkdown-ember-editor] {
         <CookbookSection
           @id="styling-daisy"
           @title="DaisyUI"
-          @blurb="DaisyUI component classes on top of Tailwind. See .daisy-demo in demo-app/styles.css."
+          @blurb="Reskins the same theme.css with DaisyUI's own theme tokens, so it follows the active DaisyUI theme. See demo-app/daisy-theme.css."
           @code={{RECIPE_DAISY}}
           class="daisy-demo"
           data-theme="light"
