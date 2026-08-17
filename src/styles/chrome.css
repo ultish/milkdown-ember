@@ -1,0 +1,858 @@
+/*
+ * Structural CSS for Crepe: positioning, show/hide, and layout only, no
+ * colors, no fonts, no visual theme (a few rules below use `currentColor` —
+ * that's a zero-color default, not a theme choice, see the Cursor section).
+ * milkdown-ember is headless, this file is the one exception, the same way
+ * floating-ember ships floating.css for its @modal backdrop: without
+ * *some* baseline here, several Crepe features aren't just unstyled,
+ * they're broken. This file covers seven unrelated categories that all
+ * need this treatment — read each section's own comment before editing it.
+ *
+ * Import this once, globally:
+ *   @import 'milkdown-ember/styles/chrome.css';
+ */
+
+/*
+ * Category 0: base CSS this addon's dependencies ship as sibling files for
+ * the consumer to import themselves — the same convention Crepe's own
+ * theme files follow, so nothing pulls any of it in automatically:
+ *
+ * - `prosemirror-view/style/prosemirror.css` — line wrapping, and,
+ *   critically, `.ProseMirror { position: relative }`. Every feature that
+ *   positions something over the editor (the virtual cursor and drop
+ *   indicator in Category 2 below, image/table resize handles, the
+ *   node-selection outline here) does so via `position: absolute` and
+ *   assumes `.ProseMirror` itself is the nearest positioned ancestor to
+ *   measure from. Without this rule they don't just render in the wrong
+ *   spot, they render relative to whatever positioned ancestor happens to
+ *   exist further up the page — or, lacking one, the viewport itself. That
+ *   was the actual root cause the first time this surfaced: the virtual
+ *   cursor (Category 2) looked entirely invisible, but it was really
+ *   rendering off in a top-left corner nowhere near the visible editor,
+ *   because `.ProseMirror` had computed `position: static`.
+ *
+ * - `@milkdown/kit/prose/tables/style/tables.css` (`prosemirror-tables`
+ *   under the hood) — `table-layout: fixed` (without it, columns ignore
+ *   the widths Milkdown assigns them and auto-size to content instead)
+ *   and the column-resize-handle's positioning. `@milkdown/kit` is
+ *   already a dependency of this addon, so this one's a plain `@import`
+ *   below rather than inlined rules like the `prosemirror-view` CSS above.
+ *   Unlike everything else in this file, that upstream stylesheet bakes
+ *   in two small hardcoded colors (a light-blue resize handle and
+ *   selected-cell overlay) that this file does not override — even
+ *   Crepe's own full theme imports it unmodified, so this matches
+ *   upstream convention, but it is a (minor, upstream-owned) crack in
+ *   this file's own "no colors" rule.
+ *
+ * - `katex/dist/katex.min.css` — Crepe's Latex feature (`$inline$` and
+ *   block math, on by default) renders formulas with KaTeX, whose own CSS
+ *   (including its math `@font-face` declarations) is what turns its
+ *   output into readable notation instead of a garbled run of raw HTML.
+ *   `katex` is a peer of `@milkdown/crepe`'s own math rendering, not
+ *   something this addon used to depend on directly — it's now a direct
+ *   dependency of this addon specifically so this import resolves.
+ */
+
+@import "@milkdown/kit/prose/tables/style/tables.css";
+@import "katex/dist/katex.min.css";
+
+.ProseMirror {
+  position: relative;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  white-space: break-spaces;
+  -webkit-font-variant-ligatures: none;
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0;
+}
+
+.ProseMirror pre {
+  white-space: pre-wrap;
+}
+
+.ProseMirror li {
+  position: relative;
+}
+
+.ProseMirror-hideselection *::selection {
+  background: transparent;
+}
+
+.ProseMirror-hideselection *::-moz-selection {
+  background: transparent;
+}
+
+.ProseMirror-hideselection {
+  caret-color: transparent;
+}
+
+.ProseMirror [draggable][contenteditable="false"] {
+  user-select: text;
+}
+
+/* Chrome (and other browsers) draw their own default focus ring on a
+   focused contenteditable, same as a plain `<textarea>`. Every demo
+   section already builds its own focus indicator on the editor's outer
+   wrapper (`:focus-within { border-color: ... }`), so left alone the
+   native ring doesn't just look redundant, it visibly conflicts: the
+   wrapper is sized to the container (e.g. a `min-height`), but
+   `.ProseMirror` itself only grows to fit its content, so the native
+   ring draws a second, smaller, differently-colored box nested inside
+   the intentional one the moment the document is short. This rule is
+   Crepe's own reset.css verbatim — removing a default only makes sense
+   paired with supplying your own, which is the demo's job, not this
+   file's. */
+.ProseMirror-focused {
+  outline: none;
+}
+
+.ProseMirror-selectednode {
+  outline: 2px solid currentColor;
+}
+
+li.ProseMirror-selectednode {
+  outline: none;
+}
+
+li.ProseMirror-selectednode::after {
+  content: "";
+  position: absolute;
+  left: -32px;
+  right: -2px;
+  top: -2px;
+  bottom: -2px;
+  border: 2px solid currentColor;
+  pointer-events: none;
+}
+
+img.ProseMirror-separator {
+  display: inline !important;
+  border: none !important;
+  margin: 0 !important;
+}
+
+/*
+ * Category 1: Crepe's own floating widgets. They mount into the DOM
+ * unconditionally and default to `display: block`, so without this they
+ * render as permanent, stacked, overlapping blocks — which also breaks
+ * their own click handling (a click can land on whichever unrelated widget
+ * happens to be stacked on top at that position, not the one you can see).
+ *
+ * The first list below is exhaustive, not illustrative: it's every `new
+ * TooltipProvider(...)` / `SlashProvider(...)` / `BlockProvider(...)`
+ * call in Crepe's and Milkdown's components source (grepped across both
+ * packages, not just the ones a bug report happened to surface — an
+ * earlier version of this file only listed 5 of these 7 and left
+ * `.milkdown-latex-inline-edit` rendering permanently, found by using
+ * the editor normally rather than by re-auditing the source). All seven
+ * share the same data-show="true"/"false" convention. `.milkdown-top-bar`
+ * is the one Crepe widget that ISN'T here: it controls its own visibility
+ * directly via an inline style keyed to the editor's editable state, not
+ * this gate, so it's deliberately absent — that's not an oversight.
+ *
+ * The second list is three more widgets that share the identical
+ * data-show convention without going through one of those three shared
+ * Provider classes — each rolls its own show/hide by hand, so they didn't
+ * turn up in the same grep and were found by exercising the Table and AI
+ * features directly: the table block's column/row drag preview and its
+ * per-handle align/delete button group, and the AI diff feature's
+ * accept/reject action bar. `CrepeFeature.AI` defaults to off and this
+ * addon's own API doesn't yet expose a way to turn it on, so
+ * `.milkdown-ai-diff-actions` is unreachable today — listed for when it
+ * is, not because it does anything currently.
+ *
+ * Then layer your own visual styling for `.milkdown-toolbar`,
+ * `.milkdown-top-bar`, `.milkdown-block-handle` (its icons are each
+ * wrapped in `.operation-item`, with `.operation-item.active` for the
+ * pressed state), `.toolbar-item`,
+ * `[data-milkdown-ember-mention-popover]`, `[data-mention-candidate]`,
+ * `.milkdown-diff-added`/`.milkdown-diff-removed`, and
+ * `.milkdown-diff-accept`/`.milkdown-diff-reject` on top — see this
+ * addon's README and demo-app/styles.css for worked examples.
+ *
+ * If you write your own rule targeting any selector listed below, don't
+ * redeclare `display` on it (even to the same value) unless you also
+ * condition it on `[data-show="true"]`: a more specific selector (e.g.
+ * scoped under your own wrapper class) will otherwise win over this
+ * file's hide rule regardless of the actual data-show value, silently
+ * making the widget permanently visible again — this is the exact bug
+ * that shipped in this addon's own demo app before it was caught.
+ */
+
+.milkdown-toolbar,
+.milkdown-block-handle,
+.milkdown-table-block .drag-preview,
+.milkdown-table-block .button-group {
+  position: absolute;
+  z-index: 10;
+  display: none;
+}
+
+.milkdown-toolbar[data-show="true"],
+.milkdown-block-handle[data-show="true"],
+.milkdown-table-block .drag-preview[data-show="true"],
+.milkdown-table-block .button-group[data-show="true"] {
+  display: flex;
+}
+
+/* The selection toolbar and the link preview/edit tooltip anchor to the
+   same selection and can end up positioned at the same coordinates —
+   without this, both are technically "shown" at once and the later one
+   in DOM order (the toolbar) paints over the link widget, which is
+   exactly the swallowed-click failure mode described at the top of this
+   category, just from two widgets that are each individually gated
+   correctly. Crepe's own toolbar.css carries this same rule. */
+.milkdown:has(.milkdown-link-preview[data-show="true"]) .milkdown-toolbar,
+.milkdown:has(.milkdown-link-edit[data-show="true"]) .milkdown-toolbar {
+  display: none;
+}
+
+/* `position: fixed`, not `absolute` like the rest of this list — it's
+   centered at the bottom of the viewport, not anchored to the editor. */
+.milkdown-ai-diff-actions {
+  position: fixed;
+  z-index: 11;
+  display: none;
+}
+
+.milkdown-ai-diff-actions[data-show="true"] {
+  display: flex;
+}
+
+/* The table block's row/column drag handles and add-row/add-column
+   buttons: unlike `.drag-preview`/`.button-group` above, these don't use
+   the data-show convention at all — Crepe's own theme instead rests them
+   off-screen by default (`left: -999px`) and repositions them with inline
+   styles while dragging. But that resting position, the per-role sizing
+   that makes each handle a sensible click target, and z-index (so a
+   column handle doesn't sit under a row handle) all come from this same
+   file this addon never imported — without them these render at
+   `position: static`, in normal document flow, cluttering the left edge
+   of every table with stacked "≡"/"+" icons instead of sitting invisibly
+   off-screen until you hover a row or column. */
+.milkdown-table-block .handle {
+  position: absolute;
+}
+
+.milkdown-table-block .handle[data-show="false"] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.milkdown-table-block .cell-handle {
+  left: -999px;
+  top: -999px;
+  cursor: grab;
+}
+
+.milkdown-table-block .cell-handle[data-role="col-drag-handle"] {
+  z-index: 50;
+  transform: translateY(50%);
+  width: 28px;
+  height: 16px;
+}
+
+.milkdown-table-block .cell-handle[data-role="row-drag-handle"] {
+  z-index: 50;
+  transform: translateX(50%);
+  width: 16px;
+  height: 28px;
+}
+
+.milkdown-table-block .line-handle[data-role="x-line-drag-handle"] {
+  z-index: 2;
+  height: 1px;
+}
+
+.milkdown-table-block .line-handle[data-role="y-line-drag-handle"] {
+  z-index: 1;
+  width: 1px;
+}
+
+.milkdown-table-block .line-handle .add-button {
+  position: absolute;
+}
+
+.milkdown-table-block .line-handle[data-role="x-line-drag-handle"] .add-button {
+  transform: translateX(-50%) translateY(-50%);
+  width: 16px;
+  height: 28px;
+}
+
+.milkdown-table-block .line-handle[data-role="y-line-drag-handle"] .add-button {
+  transform: translateY(-50%) translateX(-50%);
+  width: 28px;
+  height: 16px;
+}
+
+.milkdown-table-block .line-handle[data-display-type="indicator"] .add-button {
+  display: none;
+}
+
+.milkdown-table-block.readonly .handle {
+  display: none;
+}
+
+.milkdown-link-preview,
+.milkdown-link-edit,
+.milkdown-slash-menu,
+.milkdown-latex-inline-edit,
+.milkdown-ai-instruction,
+[data-milkdown-ember-mention-popover] {
+  position: absolute;
+  z-index: 10;
+  display: none;
+}
+
+.milkdown-link-preview[data-show="true"],
+.milkdown-link-edit[data-show="true"],
+.milkdown-slash-menu[data-show="true"],
+.milkdown-latex-inline-edit[data-show="true"],
+.milkdown-ai-instruction[data-show="true"],
+[data-milkdown-ember-mention-popover][data-show="true"] {
+  display: block;
+}
+
+/*
+ * Category 2: the Cursor feature (`CrepeFeature.Cursor`, on by default).
+ * It replaces the browser's native caret with three independent pieces —
+ * a virtual text cursor, a gap cursor (for selections between block
+ * nodes, not inside text), and a drag/drop indicator line — each shipped
+ * by a different upstream package (`prosemirror-virtual-cursor`,
+ * `prosemirror-gapcursor`, this addon's own Crepe dependency) whose own
+ * CSS Crepe's full theme imports but this headless addon never did. This
+ * category depends on Category 0 above (`.ProseMirror { position:
+ * relative }`): every element positioned here is `position: absolute`
+ * and measures from `.ProseMirror` itself. Without *this* category:
+ * the native caret goes invisible (the plugin sets `caret-color:
+ * transparent` expecting its virtual replacement to render in its
+ * place), the gap cursor never appears at all (its own package ships a
+ * `display: none` gate identical in spirit to Category 1 above, flipped
+ * to `block` only by CSS this addon never imported), and the drag-and-drop
+ * indicator line renders with no color at all (`dropIndicatorConfig`
+ * defaults its `color` option to `false`, deferring to a CSS class this
+ * addon never shipped) — dragging a block gives no visual feedback about
+ * where it will land.
+ *
+ * `currentColor` below is a deliberate zero-color default (inherits
+ * whatever text color is already in scope), not a theme choice — this
+ * file still ships no explicit colors. Override
+ * `--prosemirror-virtual-cursor-color` or add your own rule for
+ * `.crepe-drop-cursor` / `.ProseMirror-gapcursor:after` to theme them.
+ */
+
+.ProseMirror.virtual-cursor-enabled {
+  caret-color: transparent;
+}
+
+.ProseMirror .prosemirror-virtual-cursor {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+  transform: translate(-1px);
+  border-left: 2px solid var(--prosemirror-virtual-cursor-color, currentColor);
+}
+
+.ProseMirror .prosemirror-virtual-cursor-left,
+.ProseMirror .prosemirror-virtual-cursor-right {
+  width: 1ch;
+  border-bottom: 2px solid var(--prosemirror-virtual-cursor-color, currentColor);
+}
+
+.ProseMirror .prosemirror-virtual-cursor-left {
+  transform: translate(calc(-1ch + -1px));
+  border-right: 2px solid var(--prosemirror-virtual-cursor-color, currentColor);
+  border-left: none;
+}
+
+.ProseMirror .prosemirror-virtual-cursor-right {
+  border-left: 2px solid var(--prosemirror-virtual-cursor-color, currentColor);
+  border-right: none;
+}
+
+.ProseMirror-focused .prosemirror-virtual-cursor-animation {
+  animation: prosemirror-virtual-cursor-blink 1s linear infinite;
+  animation-delay: 0.5s;
+}
+
+@keyframes prosemirror-virtual-cursor-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+.ProseMirror-gapcursor {
+  display: none;
+  pointer-events: none;
+  position: absolute;
+}
+
+.ProseMirror-gapcursor::after {
+  content: "";
+  display: block;
+  position: absolute;
+  top: -2px;
+  width: 20px;
+  border-top: 1px solid currentColor;
+  animation: prosemirror-gapcursor-blink 1.1s steps(2, start) infinite;
+}
+
+@keyframes prosemirror-gapcursor-blink {
+  to {
+    visibility: hidden;
+  }
+}
+
+.ProseMirror-focused .ProseMirror-gapcursor {
+  display: block;
+}
+
+.crepe-drop-cursor {
+  background-color: currentColor;
+}
+
+/*
+ * Category 3: the Placeholder feature (`CrepeFeature.Placeholder`, on by
+ * default, default text "Please enter..."). It marks the empty block
+ * closest to the selection with a `crepe-placeholder` class and a
+ * `data-placeholder` attribute (see `createPlaceholderDecoration` in
+ * Crepe's placeholder feature source) and expects a `::before` rule using
+ * `content: attr(data-placeholder)` to actually draw the text. Without
+ * that rule this isn't a "looks unstyled" gap, it's a dead feature: the
+ * attribute is set but nothing ever reads it, so the placeholder has
+ * never rendered in any consumer of this addon. `position: absolute` and
+ * `height: 0` keep it from taking up its own line — without them the
+ * ghost text would push real content down while the block is empty and
+ * snap back the instant you type.
+ *
+ * `opacity` is used here for the same zero-color reason `currentColor` is
+ * used elsewhere in this file: placeholder text needs *some* visual
+ * distinction from real content to not be confusing (indistinguishable
+ * ghost text reads as data loss), but the specific dimming amount is a
+ * judgment call, not a color. Override `.crepe-placeholder::before`'s
+ * `opacity` (or add a `color`) to theme it.
+ */
+
+.crepe-placeholder::before {
+  content: attr(data-placeholder);
+  position: absolute;
+  height: 0;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/*
+ * Category 4: a `.hidden` utility the Image Block feature (on by default)
+ * uses to swap between its "empty, paste a link or upload" sub-view and
+ * its "image uploaded" sub-view, and the Code Block feature's language
+ * picker uses the same way — both scoped `!important` in Crepe's own
+ * theme, so there's no specificity gotcha here the way there is with the
+ * data-show gates above; any of your own rules can coexist with this one
+ * safely. Without it, `.hidden` does nothing (it isn't a CSS built-in),
+ * so both sub-views stay visible and overlap.
+ */
+
+.milkdown-image-inline .hidden,
+.milkdown-image-block .hidden,
+.milkdown-code-block .hidden {
+  display: none !important;
+}
+
+/*
+ * Category 5: the Code Block feature's own chrome (on by default).
+ * CodeMirror itself needs no CSS import — unlike everything above, it's
+ * CSS-in-JS, injecting its own `<style>` tag at runtime, which is why
+ * syntax highlighting already works with none of this file's help. What
+ * doesn't is the language picker Crepe wraps around it: `.tools` (the
+ * row holding the language button and the copy button) had no `display:
+ * flex`, so the two stacked on separate lines instead of sitting in a
+ * row; `.language-picker` (the dropdown) had no `position: absolute`,
+ * so opening it pushed the code down and to the right instead of
+ * floating over it; `.language-list` (the dropdown's own item list) had
+ * no height cap or `overflow-y: auto`, so with enough languages
+ * registered it would just render as tall as its full content instead
+ * of scrolling, the identical bug already documented for the "+" menu's
+ * `.menu-groups` above, in a different feature's copy of the same
+ * pattern.
+ */
+
+.milkdown-code-block .tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.milkdown-code-block .tools-button-group {
+  display: flex;
+}
+
+/* Without this, the copy button's icon and its "Copy" text are just two
+   inline-flowing children with nothing arranging them into a row — they
+   only end up side by side by accident, when the button happens to be wide
+   enough for both on one line. Narrower and the text wraps onto its own
+   line below the icon, doubling the button's (and so the whole `.tools`
+   row's) height. `.language-button` already gets this treatment; this
+   button never did. */
+.milkdown-code-block .tools-button-group button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.milkdown-code-block .language-button {
+  display: flex;
+  align-items: center;
+}
+
+.milkdown-code-block .language-button .expand-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+}
+
+/* Every icon below ships baked-in `width`/`height` (the copy icon) or a
+   Tailwind-style class like `class="w-6 h-6"` (the expand/search icons) that
+   this addon's own build never generates CSS for — Tailwind only emits
+   utilities for class names it finds in scanned source files, not ones that
+   show up solely in runtime-injected SVG markup. The baked-in attributes win
+   by default (24px, sized for Crepe's own denser theme), which is what
+   inflated `.tools-button-group`'s height past `.language-button`'s; the
+   `w-6 h-6` ones simply resolve to nothing and the icon collapses to 0×0.
+   Sizing every icon here explicitly sidesteps both failure modes. */
+.milkdown-code-block .language-button .expand-icon svg,
+.milkdown-code-block .tools-button-group button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.milkdown-code-block .search-box .clear-icon,
+.milkdown-code-block .search-box .clear-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.milkdown-code-block .language-picker {
+  position: absolute;
+  z-index: 999;
+  width: max-content;
+}
+
+.milkdown-code-block .language-list {
+  max-height: 20rem;
+  overflow-y: auto;
+}
+
+.milkdown-code-block .search-box {
+  display: flex;
+  align-items: center;
+}
+
+.milkdown-code-block .language-list-item {
+  display: flex;
+  align-items: center;
+}
+
+/*
+ * Category 6: the Image feature's own chrome (on by default). Crepe ships
+ * this feature's CSS as its own sibling theme file too
+ * (`@milkdown/crepe/theme/common/image-block.css`, same convention as
+ * Category 0's table/katex imports) but that file is skipped rather than
+ * imported wholesale: every color in it routes through Crepe's own
+ * `--crepe-color-*` custom properties, which this addon never defines (it
+ * imports none of Crepe's theme), so importing it verbatim wouldn't render
+ * broken, it would render with several properties silently no-op'd by an
+ * undefined custom property — an accident, not a choice. What's below is
+ * the same file with every color declaration removed: without it, the
+ * inline "paste a link or upload" widget has no layout at all, the block
+ * image's caption/edit panel doesn't lay out as a row, and — the bug this
+ * was written to fix — the hover-revealed caption/delete/upload icons and
+ * the drag-to-resize handle along the image's bottom edge have no
+ * `position: absolute`, so they render in normal document flow above the
+ * image instead of floating over its corner and edge.
+ */
+
+.milkdown-image-inline {
+  outline: none;
+  display: inline-flex;
+  vertical-align: text-bottom;
+}
+
+.milkdown-image-inline input {
+  background: transparent;
+  outline: none;
+  border: 0;
+}
+
+.milkdown-image-inline > .empty-image-inline {
+  display: inline-flex;
+}
+
+.milkdown-image-inline > .empty-image-inline .confirm {
+  cursor: pointer;
+}
+
+.milkdown-image-inline > .empty-image-inline .link-importer {
+  position: relative;
+  flex: 1;
+}
+
+.milkdown-image-inline > .empty-image-inline .link-importer > .link-input-area {
+  width: 208px;
+  display: flex;
+}
+
+.milkdown-image-inline > .empty-image-inline .link-importer .placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  cursor: text;
+}
+
+.milkdown-image-inline
+  > .empty-image-inline
+  .link-importer
+  .placeholder
+  .uploader {
+  cursor: pointer;
+  display: flex;
+}
+
+.milkdown-image-inline.selected {
+  outline: 1px solid currentColor;
+}
+
+.milkdown-image-inline .empty-image-inline {
+  align-items: center;
+  padding: 4px 10px;
+  gap: 10px;
+  border-radius: 8px;
+}
+
+.milkdown-image-inline .empty-image-inline .image-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.milkdown-image-inline .empty-image-inline .image-icon {
+  padding: 3px;
+  width: 24px;
+  height: 24px;
+}
+
+.milkdown-image-inline .empty-image-inline .link-importer {
+  height: 24px;
+}
+
+.milkdown-image-inline .empty-image-inline .link-importer .link-input-area {
+  line-height: 24px;
+}
+
+.milkdown-image-inline
+  .empty-image-inline
+  .link-importer
+  .placeholder
+  .uploader {
+  gap: 8px;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.milkdown-image-inline .empty-image-inline .link-importer .placeholder .text {
+  margin-left: 8px;
+}
+
+.milkdown-image-inline .empty-image-inline .confirm svg {
+  width: 18px;
+  height: 18px;
+}
+
+.milkdown-image-inline .empty-image-inline .confirm {
+  display: flex;
+  width: 24px;
+  height: 24px;
+  padding: 3px;
+  border-radius: 8px;
+}
+
+.milkdown-image-block {
+  outline: none;
+  margin: 4px 0;
+  display: block;
+}
+
+.milkdown-image-block > .image-wrapper {
+  position: relative;
+  width: fit-content;
+  margin: 0 auto;
+  min-width: 100px;
+}
+
+.milkdown-image-block > .image-wrapper .operation {
+  position: absolute;
+  display: flex;
+}
+
+.milkdown-image-block > .image-wrapper .operation > .operation-item {
+  cursor: pointer;
+}
+
+.milkdown-image-block > .image-wrapper img {
+  max-width: 100%;
+  min-height: 100px;
+  display: block;
+  object-fit: cover;
+}
+
+.milkdown-image-block > .image-wrapper > .image-resize-handle {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.milkdown-image-block > .image-wrapper > .image-resize-handle:hover {
+  cursor: row-resize;
+}
+
+.milkdown-image-block input {
+  background: transparent;
+  outline: none;
+  border: 0;
+}
+
+.milkdown-image-block > .caption-input {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
+.milkdown-image-block > .image-edit {
+  display: flex;
+}
+
+.milkdown-image-block > .image-edit .confirm {
+  cursor: pointer;
+}
+
+.milkdown-image-block > .image-edit .link-importer {
+  position: relative;
+  flex: 1;
+}
+
+.milkdown-image-block > .image-edit .link-importer > .link-input-area {
+  width: 100%;
+}
+
+.milkdown-image-block > .image-edit .link-importer .placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  cursor: text;
+}
+
+.milkdown-image-block > .image-edit .link-importer .placeholder .uploader {
+  cursor: pointer;
+  display: flex;
+}
+
+.milkdown-image-block.selected > .image-wrapper,
+.milkdown-image-block.selected > .image-edit:not(:has(input:focus)) {
+  outline: 2px solid currentColor;
+}
+
+.milkdown-image-block .image-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.milkdown-image-block .image-wrapper .operation {
+  gap: 12px;
+  right: 12px;
+  top: 12px;
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+.milkdown-image-block:hover > .image-wrapper .operation {
+  opacity: 1;
+}
+
+.milkdown-image-block .image-wrapper .operation > .operation-item {
+  padding: 4px;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+}
+
+.milkdown-image-block .image-wrapper .operation > .operation-item svg {
+  width: 24px;
+  height: 24px;
+}
+
+.milkdown-image-block .image-wrapper .image-resize-handle {
+  height: 4px;
+  bottom: -2px;
+  max-width: 160px;
+  width: 100%;
+  opacity: 0;
+  transition: all 0.2s;
+  border-radius: 4px;
+}
+
+.milkdown-image-block:hover > .image-wrapper .image-resize-handle {
+  opacity: 1;
+}
+
+.milkdown-image-block .caption-input {
+  margin: 4px auto;
+}
+
+.milkdown-image-block .image-edit {
+  align-items: center;
+  padding: 16px 24px;
+  gap: 16px;
+  height: 56px;
+}
+
+.milkdown-image-block .image-edit .image-icon svg {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.milkdown-image-block .image-edit .link-importer .link-input-area {
+  line-height: 24px;
+}
+
+.milkdown-image-block .image-edit .link-importer .placeholder .uploader {
+  gap: 8px;
+  justify-content: center;
+  transition: color 0.2s;
+  font-weight: 600;
+}
+
+.milkdown-image-block .image-edit .link-importer .placeholder .text {
+  margin-left: 8px;
+}
+
+.milkdown-image-block .image-edit .confirm {
+  line-height: 40px;
+  padding: 0 24px;
+  border-radius: 100px;
+  font-weight: 600;
+}

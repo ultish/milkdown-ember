@@ -1,0 +1,1 @@
+{"version":3,"file":"editor-registry.d.ts","sourceRoot":"","sources":["../../src/-private/editor-registry.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,gBAAgB,EAAE,MAAM,yBAAyB,CAAC;AAQhE,wBAAgB,cAAc,CAAC,IAAI,EAAE,OAAO,EAAE,OAAO,EAAE,gBAAgB,GAAG,IAAI,CAE7E;AAED,wBAAgB,gBAAgB,CAAC,IAAI,EAAE,OAAO,GAAG,IAAI,CAEpD;AAED,wBAAgB,YAAY,CAAC,IAAI,EAAE,OAAO,GAAG,gBAAgB,GAAG,SAAS,CAExE"}

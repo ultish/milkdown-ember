@@ -1,0 +1,632 @@
+/*
+ * A minimal default visual theme. Unlike chrome.css, importing this is
+ * genuinely optional: it exists so a consumer who just wants a decent-looking
+ * editor gets one without writing any CSS, and anyone who wants their own look
+ * can ignore it entirely and style the same hooks from scratch. Every color,
+ * radius, and shadow below is a `var(--milkdown-ember-*, fallback)`, so
+ * re-theming means setting one custom property rather than out-specifying a
+ * rule.
+ *
+ * Import once, globally, after chrome.css — several selectors here tie
+ * chrome.css's on specificity, and a tie is broken by source order:
+ *   @import 'milkdown-ember/styles/chrome.css';
+ *   @import 'milkdown-ember/styles/theme.css';
+ */
+
+[data-milkdown-ember-editor] {
+  display: flex;
+  flex-direction: column;
+  background: var(--milkdown-ember-surface, #fff);
+  border: 1px solid var(--milkdown-ember-border, #ddd);
+  border-radius: var(--milkdown-ember-radius, 8px);
+  padding: 0.75rem 1rem;
+  min-height: 10rem;
+  font-family: var(
+    --milkdown-ember-font-family,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif
+  );
+  color: var(--milkdown-ember-text, #1c1915);
+  cursor: text;
+}
+
+[data-milkdown-ember-editor]:focus-within {
+  border-color: var(--milkdown-ember-border-focus, #888);
+}
+
+/* Crepe mounts a `.milkdown` wrapper, then `.ProseMirror`, inside the
+   root we hand it. Both need to be told to stretch, not just the root:
+   `.ProseMirror` otherwise only grows to fit its own content, so on a
+   short document the actually-focusable area is much smaller than this
+   box — clicking the empty space below the text does nothing, unlike a
+   real textarea. */
+[data-milkdown-ember-editor] .milkdown {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+[data-milkdown-ember-editor] .ProseMirror {
+  flex: 1;
+}
+
+/* Bullet/ordered/task list items: Crepe renders each as
+   `<li class="list-item"><div class="label-wrapper">…icon…</div><div
+   class="children">…text…</div></li>` — two block-level divs, which stack
+   vertically unless `.list-item` is given `display: flex` itself. */
+[data-milkdown-ember-editor] .list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+[data-milkdown-ember-editor] .list-item > .children {
+  min-width: 0;
+  flex: 1;
+}
+
+/* The checkbox/bullet icon is an inline SVG with its own hardcoded
+   width="24" height="24" attributes — a CSS size on the wrapper alone
+   doesn't shrink it, so it was overflowing this box before this rule
+   existed. Size the svg itself; CSS wins over the SVG's own attributes. */
+[data-milkdown-ember-editor] .label-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+[data-milkdown-ember-editor] .label-wrapper svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+[data-milkdown-ember-editor] .label-wrapper .checked,
+[data-milkdown-ember-editor] .label-wrapper .unchecked {
+  cursor: pointer;
+}
+
+/* Tables: chrome.css only imports prosemirror-tables' own base CSS
+   (table-layout, the column-resize handle's positioning), which ships
+   with zero border/background of its own by design — "give a table
+   borders" is a visual choice, so it belongs in this file rather than the
+   structural one. */
+.milkdown-table-block table {
+  border-collapse: collapse;
+}
+
+.milkdown-table-block th,
+.milkdown-table-block td {
+  border: 1px solid var(--milkdown-ember-border, #ddd);
+  padding: 0.35rem 0.6rem;
+}
+
+.milkdown-table-block th {
+  background: var(--milkdown-ember-table-header-bg, #f7f6f3);
+  font-weight: 600;
+}
+
+/* Blockquotes: no chrome.css involvement at all here (it's a plain node,
+   not a floating widget or Cursor/Placeholder feature), just a hook worth
+   styling — a <blockquote> with no border/indent styling is easy to
+   mistake for "broken" since it reads as unstyled body text. */
+[data-milkdown-ember-editor] blockquote {
+  margin: 0.5rem 0;
+  padding: 0.1rem 0 0.1rem 0.75rem;
+  border-left: 3px solid var(--milkdown-ember-border, #ddd);
+  color: var(--milkdown-ember-text-muted, #57534e);
+}
+
+/* The code block's language picker: `.tools`/`.language-picker`'s
+   structural layout (flex row, absolute positioning, list scrolling)
+   comes from chrome.css — this is purely the visual layer on top.
+   `#282c34` matches CodeMirror's own default theme color (`.cm-editor`'s
+   background) exactly — CodeMirror ships that itself, not something this
+   addon chose, so this wrapper picks it up rather than introducing a
+   second, mismatched color. Without it the `.tools` row sits on the
+   page's own white background directly above a dark code area, reading as
+   two unrelated boxes stacked on top of each other instead of one. */
+.milkdown-code-block {
+  margin: 0.5rem 0;
+  background: var(--milkdown-ember-code-bg, #282c34);
+  border-radius: var(--milkdown-ember-radius-md, 6px);
+  overflow: hidden;
+}
+
+.milkdown-code-block .tools {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.75rem;
+  color: var(--milkdown-ember-code-text, #abb2bf);
+}
+
+/* `color` set explicitly here, not just inherited from `.tools` above:
+   both of these are real `<button>` elements, and buttons don't inherit
+   `color` from an ancestor the way a `<span>` or `<div>` would — the
+   browser's own UA stylesheet gives them their own text color instead,
+   so without this they render in whatever that default is (often
+   unreadable dark text) regardless of `.tools`'s color. */
+.milkdown-code-block .language-button {
+  gap: 0.25rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: var(--milkdown-ember-radius-sm, 4px);
+  color: var(--milkdown-ember-code-text, #abb2bf);
+  cursor: pointer;
+}
+
+.milkdown-code-block .language-button:hover {
+  background: var(--milkdown-ember-code-hover, rgb(255 255 255 / 10%));
+}
+
+.milkdown-code-block .tools-button-group button {
+  gap: 0.25rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--milkdown-ember-radius-sm, 4px);
+  color: var(--milkdown-ember-code-text, #abb2bf);
+  cursor: pointer;
+}
+
+.milkdown-code-block .tools-button-group button:hover {
+  background: var(--milkdown-ember-code-hover, rgb(255 255 255 / 10%));
+}
+
+/* `color` set explicitly here, not left to inherit: `.tools`'s own `color`
+   above is `--milkdown-ember-code-text`, a light gray tuned for its dark
+   background — without this reset that same light-on-dark color inherits
+   straight through into this popover, which sits on `--milkdown-ember-
+   surface` (white by default), reading as barely-visible text on a white
+   background instead of the dark-on-light everything else in this popover
+   already expects. */
+.milkdown-code-block .list-wrapper {
+  width: 14rem;
+  background: var(--milkdown-ember-surface, #fff);
+  border: 1px solid var(--milkdown-ember-border, #ddd);
+  border-radius: var(--milkdown-ember-radius, 8px);
+  box-shadow: var(--milkdown-ember-shadow, 0 8px 24px rgb(0 0 0 / 12%));
+  color: var(--milkdown-ember-text, #1c1915);
+}
+
+.milkdown-code-block .search-box {
+  gap: 0.4rem;
+  margin: 0.4rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--milkdown-ember-border, #ddd);
+  border-radius: var(--milkdown-ember-radius-sm, 4px);
+}
+
+.milkdown-code-block .search-box input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.8rem;
+}
+
+.milkdown-code-block .language-list-item {
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.milkdown-code-block .language-list-item:hover {
+  background: var(--milkdown-ember-surface-hover, #f0eee9);
+}
+
+/* No `display` here: `.milkdown-toolbar`'s is gated by chrome.css's
+   `[data-show="true"]` rule, and any rule in this file that redeclared it
+   unconditionally (even to the same value) would tie or beat that gate on
+   specificity and defeat it. `.milkdown-top-bar` isn't data-show gated —
+   it manages its own visibility via an inline style — so it gets its own
+   rule below. */
+.milkdown-toolbar,
+.milkdown-top-bar {
+  gap: 0.25rem;
+  background: var(--milkdown-ember-surface, #fff);
+  border: 1px solid var(--milkdown-ember-border, #ddd);
+  border-radius: var(--milkdown-ember-radius-md, 6px);
+  padding: 0.25rem;
+}
+
+.milkdown-top-bar {
+  display: flex;
+  margin-bottom: 0.5rem;
+}
+
+.toolbar-item {
+  border: none;
+  background: transparent;
+  border-radius: var(--milkdown-ember-radius-sm, 4px);
+  padding: 0.3rem;
+  cursor: pointer;
+}
+
+.toolbar-item.active,
+.toolbar-item:hover {
+  background: var(--milkdown-ember-surface-hover, #f0eee9);
+}
+
+/* The static top bar's actual button row: Crepe names these classes
+   differently from the floating toolbar's `.toolbar-item` above
+   (`top-bar-item`, `top-bar-heading-selector`, ...), and nests them inside
+   a `.top-bar-inner` wrapper that needs its own `display: flex` — without
+   it `.top-bar-inner` defaults to `display: block` and every icon/selector
+   stacks vertically instead of spreading out in a row. */
+.top-bar-inner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.top-bar-divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 0.25rem;
+  background: var(--milkdown-ember-border, #ddd);
+}
+
+.top-bar-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  background: transparent;
+  border-radius: var(--milkdown-ember-radius-sm, 4px);
+  cursor: pointer;
+}
+
+.top-bar-item.active,
+.top-bar-item:hover {
+  background: var(--milkdown-ember-surface-hover, #f0eee9);
+}
+
+.top-bar-heading-selector {
+  position: relative;
+}
+
+.top-bar-heading-button {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: 1.75rem;
+  padding: 0 0.4rem;
+  border: none;
+  background: transparent;
+  border-radius: var(--milkdown-ember-radius-sm, 4px);
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.top-bar-heading-button:hover {
+  background: var(--milkdown-ember-surface-hover, #f0eee9);
+}
+
+.top-bar-heading-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  min-width: 9rem;
+  background: var(--milkdown-ember-surface, #fff);
+  border: 1px solid var(--milkdown-ember-border, #ddd);
+  border-radius: var(--milkdown-ember-radius-md, 6px);
+  box-shadow: var(--milkdown-ember-shadow, 0 8px 24px rgb(0 0 0 / 12%));
+  padding: 0.25rem;
+}
+
+.top-bar-heading-option {
+  display: block;
+  width: 100%;
+  padding: 0.3rem 0.5rem;
+  border: none;
+  background: transparent;
+  border-radius: var(--milkdown-ember-radius-sm, 4px);
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.8rem;
+}
+
+.top-bar-heading-option.active,
+.top-bar-heading-option:hover {
+  background: var(--milkdown-ember-surface-hover, #f0eee9);
+}
+
+.milkdown-block-handle {
+  gap: 0.15rem;
+  background: var(--milkdown-ember-surface, #fff);
+  border: 1px solid var(--milkdown-ember-border, #ddd);
+  border-radius: var(--milkdown-ember-radius-md, 6px);
+  padding: 0.15rem;
+}
+
+.operation-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--milkdown-ember-radius-sm, 4px);
+  cursor: pointer;
+}
+
+.operation-item:hover,
+.operation-item.active {
+  background: var(--milkdown-ember-surface-hover, #f0eee9);
+}
+
+.link-preview,
+.link-edit {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--milkdown-ember-surface, #fff);
+  border: 1px solid var(--milkdown-ember-border, #ddd);
+  border-radius: var(--milkdown-ember-radius-md, 6px);
+  box-shadow: var(--milkdown-ember-shadow, 0 8px 24px rgb(0 0 0 / 12%));
+}
+
+.link-display {
+  max-width: 15rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.85rem;
+}
+
+.link-icon,
+.milkdown-link-preview .button,
+.milkdown-link-edit .button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--milkdown-ember-radius-sm, 4px);
+  cursor: pointer;
+}
+
+.link-icon:hover,
+.milkdown-link-preview .button:hover,
+.milkdown-link-edit .button:hover {
+  background: var(--milkdown-ember-surface-hover, #f0eee9);
+}
+
+.input-area {
+  width: 12rem;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.85rem;
+}
+
+/* No `display` here, same reason as `.milkdown-toolbar` above: this
+   selector ties chrome.css's `[data-show="true"]` gate on specificity, and
+   a tie is broken by source order, not by data-show's actual value — so an
+   unconditional `display: flex` here would win regardless of data-show and
+   defeat the gate. See the `[data-show="true"]` rule below. */
+.milkdown-slash-menu {
+  width: 16rem;
+  max-height: 20rem;
+  overflow: hidden;
+  flex-direction: column;
+  background: var(--milkdown-ember-surface, #fff);
+  border: 1px solid var(--milkdown-ember-border, #ddd);
+  border-radius: var(--milkdown-ember-radius, 8px);
+  box-shadow: var(--milkdown-ember-shadow, 0 8px 24px rgb(0 0 0 / 12%));
+}
+
+.milkdown-slash-menu[data-show="true"] {
+  display: flex;
+}
+
+/* Vue mounts the menu's own component root as an unclassed `<div>` one
+   level inside `.milkdown-slash-menu` (it holds `.tab-group` and
+   `.menu-groups`, but is neither of them) — without making that
+   in-between div a flex column itself, it's a `display: block` box that
+   simply grows to its content's full height, and `.menu-groups`'s own
+   `flex: 1` two rules below has no real flex container to size against.
+   `min-height: 0` is required on both this div and `.menu-groups`: a flex
+   item's default `min-height: auto` refuses to shrink below its content's
+   intrinsic height, which is exactly what needs to happen here for
+   `.menu-groups` to become shorter than its full item list and actually
+   scroll. */
+.milkdown-slash-menu > div {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.milkdown-slash-menu .tab-group ul {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.4rem;
+  border-bottom: 1px solid var(--milkdown-ember-divider, #eee);
+  list-style: none;
+}
+
+.milkdown-slash-menu .tab-group li {
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--milkdown-ember-radius-sm, 4px);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.milkdown-slash-menu .tab-group li.selected {
+  background: var(--milkdown-ember-surface-hover, #f0eee9);
+}
+
+/* `flex: 1` + `min-height: 0` is what actually makes this scroll: without
+   `min-height: 0`, a flex child refuses to shrink below its content's
+   natural height, so `.menu-groups` never becomes shorter than its full
+   item list — it just overflows the `.milkdown-slash-menu` wrapper above
+   (clipped by that wrapper's own `overflow: hidden`) instead of scrolling
+   internally, and `overflow-y: auto` here never engages because nothing
+   is actually being clipped from this element's own point of view. That
+   also breaks the tab-group's "jump to section" click: it sets this
+   element's `scrollTop`, which is a no-op on a box that was never
+   scrollable to begin with. */
+.milkdown-slash-menu .menu-groups {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  padding: 0.4rem;
+  scroll-behavior: smooth;
+}
+
+.milkdown-slash-menu h6 {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--milkdown-ember-label-muted, #999);
+  margin: 0.5rem 0.4rem 0.2rem;
+}
+
+.milkdown-slash-menu .menu-group ul {
+  list-style: none;
+}
+
+.milkdown-slash-menu li[data-index] {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--milkdown-ember-radius-sm, 4px);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.milkdown-slash-menu li[data-index].hover {
+  background: var(--milkdown-ember-surface-hover, #f0eee9);
+}
+
+[data-milkdown-ember-mention-popover] {
+  background: var(--milkdown-ember-mention-bg, #1c1915);
+  color: var(--milkdown-ember-mention-text, #f4efe4);
+  border-radius: var(--milkdown-ember-radius-md, 6px);
+  padding: 0.25rem;
+  display: none;
+}
+
+[data-milkdown-ember-mention-popover][data-show="true"] {
+  display: block;
+}
+
+[data-mention-candidate] {
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--milkdown-ember-radius-sm, 4px);
+  cursor: pointer;
+  list-style: none;
+}
+
+[data-mention-candidate][data-active] {
+  background: var(--milkdown-ember-mention-active, rgb(255 255 255 / 15%));
+}
+
+.milkdown-diff-added {
+  background: var(--milkdown-ember-diff-added-bg, #e6ffed);
+  color: var(--milkdown-ember-text, #1c1915);
+}
+
+.milkdown-diff-removed {
+  background: var(--milkdown-ember-diff-removed-bg, #ffeef0);
+  color: var(--milkdown-ember-text, #1c1915);
+  text-decoration: line-through;
+}
+
+.milkdown-diff-controls {
+  display: inline-flex;
+  gap: 0.25rem;
+  margin: 0 0.35rem;
+}
+
+.milkdown-diff-accept,
+.milkdown-diff-reject {
+  border: 1px solid var(--milkdown-ember-border, #ddd);
+  border-radius: var(--milkdown-ember-radius-sm, 4px);
+  background: var(--milkdown-ember-surface, #fff);
+  padding: 0.05rem 0.4rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+[data-milkdown-ember-diff-side-by-side] {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+[data-diff-pane] {
+  border: 1px solid var(--milkdown-ember-border, #ddd);
+  border-radius: var(--milkdown-ember-radius, 8px);
+  padding: 0.75rem 1rem;
+}
+
+[data-diff-block][data-diff-status="changed"] {
+  background: var(--milkdown-ember-diff-changed-bg, #fff8e1);
+}
+
+/* The Image feature: chrome.css covers its layout and the resize
+   handle/operation icons' positioning; this is purely the color layer on
+   top. --milkdown-ember-image-operation-bg/-text get their own pair rather
+   than reusing the mention popover's dark-chip colors — same look by
+   default, but a consumer re-theming one shouldn't accidentally re-theme
+   the other. */
+.milkdown-image-inline .empty-image-inline,
+.milkdown-image-block .image-edit {
+  background: var(--milkdown-ember-surface, #fff);
+}
+
+.milkdown-image-inline .empty-image-inline .image-icon svg,
+.milkdown-image-block .image-edit .image-icon svg {
+  fill: var(--milkdown-ember-text-muted, #57534e);
+}
+
+.milkdown-image-inline .empty-image-inline .link-importer .placeholder,
+.milkdown-image-block .image-edit .link-importer .placeholder {
+  color: var(--milkdown-ember-text-muted, #57534e);
+}
+
+.milkdown-image-inline
+  .empty-image-inline
+  .link-importer
+  .placeholder
+  .uploader,
+.milkdown-image-block .image-edit .link-importer .placeholder .uploader,
+.milkdown-image-inline .empty-image-inline .confirm {
+  color: var(--milkdown-ember-text, #1c1915);
+}
+
+.milkdown-image-inline .empty-image-inline .confirm:hover {
+  background: var(--milkdown-ember-surface-hover, #f0eee9);
+}
+
+.milkdown-image-inline.empty.selected .empty-image-inline {
+  box-shadow: var(--milkdown-ember-shadow, 0 8px 24px rgb(0 0 0 / 12%));
+}
+
+.milkdown-image-block .image-edit .confirm {
+  border: 1px solid var(--milkdown-ember-border, #ddd);
+  background: var(--milkdown-ember-surface, #fff);
+}
+
+.milkdown-image-block .image-edit .confirm:hover {
+  background: var(--milkdown-ember-surface-hover, #f0eee9);
+}
+
+.milkdown-image-block .caption-input {
+  color: var(--milkdown-ember-text-muted, #57534e);
+}
+
+.milkdown-image-block .image-wrapper .operation > .operation-item {
+  color: var(--milkdown-ember-image-operation-text, #f4efe4);
+  background: var(--milkdown-ember-image-operation-bg, #1c1915);
+}
+
+.milkdown-image-block .image-wrapper .image-resize-handle {
+  background: var(--milkdown-ember-border, #ddd);
+}
