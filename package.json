@@ -1,6 +1,6 @@
 {
   "name": "milkdown-ember",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Ember wrapper for the Milkdown Crepe markdown editor, with mentions, diff review, and a swappable toolbar.",
   "keywords": [
     "ember-addon",
