@@ -491,6 +491,19 @@ img.ProseMirror-separator {
   display: flex;
 }
 
+/* Without this, the copy button's icon and its "Copy" text are just two
+   inline-flowing children with nothing arranging them into a row — they
+   only end up side by side by accident, when the button happens to be wide
+   enough for both on one line. Narrower and the text wraps onto its own
+   line below the icon, doubling the button's (and so the whole `.tools`
+   row's) height. `.language-button` already gets this treatment; this
+   button never did. */
+.milkdown-code-block .tools-button-group button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .milkdown-code-block .language-button {
   display: flex;
   align-items: center;

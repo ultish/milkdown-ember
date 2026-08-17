@@ -162,6 +162,7 @@
 }
 
 .milkdown-code-block .tools-button-group button {
+  gap: 0.25rem;
   padding: 0.15rem 0.5rem;
   border-radius: var(--milkdown-ember-radius-sm, 4px);
   color: var(--milkdown-ember-code-text, #abb2bf);
