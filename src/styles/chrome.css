@@ -500,6 +500,29 @@ img.ProseMirror-separator {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 18px;
+  height: 18px;
+}
+
+/* Every icon below ships baked-in `width`/`height` (the copy icon) or a
+   Tailwind-style class like `class="w-6 h-6"` (the expand/search icons) that
+   this addon's own build never generates CSS for — Tailwind only emits
+   utilities for class names it finds in scanned source files, not ones that
+   show up solely in runtime-injected SVG markup. The baked-in attributes win
+   by default (24px, sized for Crepe's own denser theme), which is what
+   inflated `.tools-button-group`'s height past `.language-button`'s; the
+   `w-6 h-6` ones simply resolve to nothing and the icon collapses to 0×0.
+   Sizing every icon here explicitly sidesteps both failure modes. */
+.milkdown-code-block .language-button .expand-icon svg,
+.milkdown-code-block .tools-button-group button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.milkdown-code-block .search-box .clear-icon,
+.milkdown-code-block .search-box .clear-icon svg {
+  width: 20px;
+  height: 20px;
 }
 
 .milkdown-code-block .language-picker {

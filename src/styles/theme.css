@@ -171,12 +171,20 @@
   background: var(--milkdown-ember-code-hover, rgb(255 255 255 / 10%));
 }
 
+/* `color` set explicitly here, not left to inherit: `.tools`'s own `color`
+   above is `--milkdown-ember-code-text`, a light gray tuned for its dark
+   background — without this reset that same light-on-dark color inherits
+   straight through into this popover, which sits on `--milkdown-ember-
+   surface` (white by default), reading as barely-visible text on a white
+   background instead of the dark-on-light everything else in this popover
+   already expects. */
 .milkdown-code-block .list-wrapper {
   width: 14rem;
   background: var(--milkdown-ember-surface, #fff);
   border: 1px solid var(--milkdown-ember-border, #ddd);
   border-radius: var(--milkdown-ember-radius, 8px);
   box-shadow: var(--milkdown-ember-shadow, 0 8px 24px rgb(0 0 0 / 12%));
+  color: var(--milkdown-ember-text, #1c1915);
 }
 
 .milkdown-code-block .search-box {
