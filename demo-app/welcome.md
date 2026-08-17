@@ -18,7 +18,7 @@ sdf
 >
 > Please try something on the left side.
 
-![1.00](https://milkdown.dev/polar.jpeg "Hello by a polar bear")
+![1.00](/polar.jpeg "Hello by a polar bear")
 
 You're seeing this editor called **🥞Crepe**, which is an editor built on top of Milkdown.
 

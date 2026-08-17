@@ -5,6 +5,15 @@ import MilkdownEditor from '#src/components/milkdown-editor.gts';
 
 import welcomeMd from '../welcome.md?raw';
 
+// welcome.md hardcodes an absolute `/polar.jpeg` path, matching the real
+// milkdown.dev/playground source byte-for-byte. That only resolves under a
+// root-served app; on GitHub Pages this app is served from a subpath
+// (`/milkdown-ember/`), so the image needs BASE_URL prefixed in at runtime.
+const WELCOME_MD = welcomeMd.replace(
+  '/polar.jpeg',
+  `${import.meta.env.BASE_URL}polar.jpeg`,
+);
+
 <template>
   {{pageTitle "milkdown-ember"}}
 
@@ -32,6 +41,6 @@ import welcomeMd from '../welcome.md?raw';
       <code>@mention</code>, toolbar and diff walkthrough.
     </p>
 
-    <MilkdownEditor @value={{welcomeMd}} />
+    <MilkdownEditor @value={{WELCOME_MD}} />
   </div>
 </template>
